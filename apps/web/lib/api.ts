@@ -141,6 +141,47 @@ export async function fetchReport(publicId: string): Promise<ReportPayload | nul
   return (await response.json()) as ReportPayload;
 }
 
+export interface ExampleSummary {
+  publicId: string;
+  title: string;
+  /** Why this example is in the gallery — the shape of brief it represents. */
+  shape: string;
+  overallScore: number;
+  questionCount: number;
+  charCount: number;
+}
+
+/**
+ * The seeded example gallery.
+ *
+ * Returns `[]` rather than throwing on any failure. `/examples` is a marketing
+ * surface: an empty gallery with an explanation is a far better outcome than an
+ * error boundary, and an unseeded database is the expected state on a fresh
+ * deployment rather than a fault.
+ */
+export async function fetchExamples(): Promise<ExampleSummary[]> {
+  const incoming = await headers();
+  try {
+    assertNotSelf(incoming.get('host'));
+  } catch (error) {
+    console.error(`[examples] ${String(error)}`);
+    return [];
+  }
+
+  try {
+    const response = await fetch(`${BASE}/v1/examples`, {
+      // Revalidated by the page's own `revalidate`, so this may be cached.
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(REPORT_TIMEOUT_MS),
+    });
+    if (!response.ok) return [];
+    return (await response.json()) as ExampleSummary[];
+  } catch (error) {
+    console.error(`[examples] Could not load examples: ${String(error)}`);
+    return [];
+  }
+}
+
 export function apiBase(): string {
   return BASE;
 }

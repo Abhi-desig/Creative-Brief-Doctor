@@ -112,6 +112,40 @@ export class DiagnosisService {
   }
 
   /**
+   * The seeded gallery. Public, cacheable, and cheap — one indexed read.
+   *
+   * Ordered by score ascending so the gallery opens with the thinnest brief. The
+   * two-line Slack request is the one that makes the tool's point immediately;
+   * leading with a well-specified brief that scores 85 shows a reader nothing
+   * they did not already believe.
+   */
+  async listExamples() {
+    const briefs = await this.prisma.brief.findMany({
+      where: { exampleShape: { not: null } },
+      include: {
+        diagnoses: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { overallScore: true, _count: { select: { questions: true } } },
+        },
+      },
+    });
+
+    return briefs
+      // A seeded brief whose diagnosis failed is simply not an example yet.
+      .filter((brief) => brief.diagnoses.length > 0)
+      .map((brief) => ({
+        publicId: brief.publicId,
+        title: brief.title ?? 'Untitled brief',
+        shape: brief.exampleShape!,
+        overallScore: brief.diagnoses[0]!.overallScore,
+        questionCount: brief.diagnoses[0]!._count.questions,
+        charCount: brief.charCount,
+      }))
+      .sort((a, b) => a.overallScore - b.overallScore);
+  }
+
+  /**
    * Score a brief and persist the result. Yields coarse status events only —
    * never partial JSON, which renders as garbage and would make the wire
    * contract depend on which provider is active.

@@ -36,7 +36,14 @@ model Brief {
   createdAt DateTime    @default(now())
   diagnoses Diagnosis[]
 
+  /// Non-null marks this as a seeded gallery example, and holds the one-line
+  /// description of WHAT SHAPE of brief it represents ("a two-line Slack
+  /// request"). A flag plus a separate copy table would be two things to keep in
+  /// step for a set of six rows; the presence of the copy is the flag.
+  exampleShape String?
+
   @@index([createdAt])
+  @@index([exampleShape])
 }
 
 model Diagnosis {

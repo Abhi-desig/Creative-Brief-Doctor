@@ -19,6 +19,11 @@ import { skipAllExcept } from '../common/throttle-tiers.js';
 export class QuotaController {
   constructor(private readonly quota: QuotaService) {}
 
+  // NOTE: the examples endpoint lives in ExamplesController below rather than on
+  // DiagnosisController, for the same reason this one does — both are cheap
+  // public reads that must not inherit the `diagnose` tier meant for spending a
+  // generation.
+
   /**
    * Deliberately returns no counts — see `PublicQuota`. A state and a reset time
    * is the entire contract.

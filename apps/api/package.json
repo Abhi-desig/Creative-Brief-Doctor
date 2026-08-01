@@ -13,6 +13,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "seed": "tsx prisma/seed/seed.ts",
+    "seed:examples": "tsx prisma/seed/examples.ts",
     "hash-password": "tsx scripts/hash-password.ts"
   },
   "dependencies": {
