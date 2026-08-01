@@ -12,6 +12,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toast';
 import { StreamAbortedError, streamDiagnosis } from '@/lib/sse-client';
+import { useLocalBriefs } from '@/lib/use-local-briefs';
+import { useCapacity } from '@/lib/use-capacity';
+import { SAMPLE_BRIEFS } from '@/lib/sample-briefs';
+import { Preflight } from './preflight';
 import { ScoringProgress, type Phase } from './scoring-progress';
 
 /**
@@ -28,6 +32,14 @@ const MAX_CHARS = 20_000;
 const PasteSchema = z
   .object({
     title: z.string().max(200).optional(),
+    /**
+     * Who the brief came from. One field, not a set of them: three inputs read as
+     * an intake form and make the tool feel like paperwork, where one reads as a
+     * search box. It earns its place by turning the ready-to-send message's
+     * generic `Hi,` into `Hi Sarah,` — the difference between an artefact you
+     * send and one you edit first.
+     */
+    requester: z.string().max(120).optional(),
     text: z
       .string()
       .min(40, 'That is too short to diagnose — paste the whole brief.')
@@ -64,12 +76,28 @@ export function PasteForm() {
 
   const form = useForm<PasteValues>({
     resolver: standardSchemaResolver(PasteSchema),
-    defaultValues: { title: '', text: '' },
+    defaultValues: { title: '', requester: '', text: '' },
     mode: 'onBlur',
   });
 
   const text = form.watch('text') ?? '';
   const busy = phase !== null;
+
+  const { remember } = useLocalBriefs();
+  const capacity = useCapacity();
+  // Only a *known* closed day disables the button. An unknown capacity leaves it
+  // enabled: the API is the authority and will return a clear 503, whereas a
+  // disabled button with no explanation is a dead end.
+  const closed = capacity?.state === 'closed';
+
+  function applySample(id: string) {
+    const sample = SAMPLE_BRIEFS.find((s) => s.id === id);
+    if (!sample) return;
+    // `shouldDirty` so validation and the counter update as if typed.
+    form.setValue('title', sample.title, { shouldDirty: true });
+    form.setValue('requester', sample.requester, { shouldDirty: true });
+    form.setValue('text', sample.text, { shouldDirty: true, shouldValidate: true });
+  }
 
   async function onSubmit(values: PasteValues) {
     // Supersede any in-flight run rather than racing it.
@@ -85,6 +113,7 @@ export function PasteForm() {
         body: JSON.stringify({
           text: values.text,
           ...(values.title ? { title: values.title } : {}),
+          ...(values.requester ? { requester: values.requester } : {}),
         }),
         signal: controller.signal,
       });
@@ -95,6 +124,22 @@ export function PasteForm() {
       }
 
       const { publicId } = (await created.json()) as { publicId: string };
+
+      /**
+       * Recorded BEFORE scoring, with a null score.
+       *
+       * The brief row exists from this point, so the link already resolves. If
+       * the stream then drops, the device list is the only way back to it — five
+       * briefs in the dev database reached exactly that state with no retry path.
+       * Remembering only on success would have lost every one of them.
+       */
+      remember({
+        publicId,
+        title: values.title?.trim() ? values.title.trim() : null,
+        score: null,
+        scoredAt: Date.now(),
+      });
+
       await streamDiagnosis(
         publicId,
         (next) => {
@@ -102,6 +147,7 @@ export function PasteForm() {
         },
         controller.signal,
       );
+
       // Full navigation so the report is server-rendered exactly as a
       // stakeholder opening the link would see it.
       router.push(`/d/${publicId}`);
@@ -121,19 +167,37 @@ export function PasteForm() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      <Field>
-        <FieldLabel htmlFor="title">Brief name</FieldLabel>
-        <Input
-          id="title"
-          placeholder="Q3 product launch"
-          disabled={busy}
-          {...form.register('title')}
-        />
-        <FieldDescription>
-          Optional. Appears at the top of the shared report.
-        </FieldDescription>
-        <FieldError errors={[form.formState.errors.title]} />
-      </Field>
+      <SamplePicker onPick={applySample} disabled={busy} />
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Field>
+          <FieldLabel htmlFor="title">Brief name</FieldLabel>
+          <Input
+            id="title"
+            placeholder="Q3 product launch"
+            disabled={busy}
+            {...form.register('title')}
+          />
+          <FieldDescription>
+            Optional. Appears at the top of the shared report.
+          </FieldDescription>
+          <FieldError errors={[form.formState.errors.title]} />
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="requester">Who sent it</FieldLabel>
+          <Input
+            id="requester"
+            placeholder="Sarah"
+            disabled={busy}
+            {...form.register('requester')}
+          />
+          <FieldDescription>
+            Optional. Used to address the ready-to-send questions.
+          </FieldDescription>
+          <FieldError errors={[form.formState.errors.requester]} />
+        </Field>
+      </div>
 
       <Field data-invalid={form.formState.errors.text ? true : undefined}>
         <FieldLabel htmlFor="text">The brief</FieldLabel>
@@ -144,6 +208,15 @@ export function PasteForm() {
           disabled={busy}
           className="resize-y"
           {...form.register('text')}
+          // Cmd/Ctrl+Enter submits. A 20,000-character textarea puts the button a
+          // long scroll below the cursor, and this is the gesture people already
+          // expect from every other box that takes a long block of text.
+          onKeyDown={(event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+              event.preventDefault();
+              void form.handleSubmit(onSubmit)();
+            }
+          }}
         />
         <div className="flex items-baseline justify-between gap-4">
           <FieldDescription>
@@ -160,13 +233,85 @@ export function PasteForm() {
         <FieldError errors={[form.formState.errors.text]} />
       </Field>
 
+      <Preflight text={text} />
+
       <div className="flex flex-wrap items-center gap-4">
-        <Button type="submit" disabled={busy} className="gap-2">
+        <Button type="submit" disabled={busy || closed} className="gap-2">
           {busy && <Spinner className="size-4" />}
           {busy ? 'Scoring…' : 'Diagnose this brief'}
         </Button>
-        {phase && <ScoringProgress phase={phase} />}
+
+        {phase ? (
+          <ScoringProgress phase={phase} />
+        ) : closed ? (
+          <p className="text-muted-foreground text-sm">
+            The daily limit is reached. The model quota is shared across everyone
+            using this tool — it resets overnight.
+          </p>
+        ) : (
+          <p className="text-viz-muted hidden text-xs sm:block">
+            {/* Shown only where the shortcut exists to be used. */}
+            or press{' '}
+            <kbd className="bg-muted rounded border px-1 py-0.5 font-sans text-[0.6875rem]">
+              ⌘
+            </kbd>
+            {' + '}
+            <kbd className="bg-muted rounded border px-1 py-0.5 font-sans text-[0.6875rem]">
+              ↵
+            </kbd>
+          </p>
+        )}
       </div>
     </form>
+  );
+}
+
+/**
+ * "Try a sample brief."
+ *
+ * Solves the empty textarea in one click, which is the single biggest obstacle to
+ * a first-time visitor understanding what this does. Grouped by SHAPE — a two-line
+ * chat request, a real brief with gaps, a fully specified one — because that is
+ * the actual choice being made, and because it sets an expectation before the
+ * score arrives.
+ *
+ * A native <select>: it needs no JavaScript to be operable, it is one tap on
+ * mobile, and it carries its own label and keyboard behaviour.
+ */
+function SamplePicker({
+  onPick,
+  disabled,
+}: {
+  onPick: (id: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <label htmlFor="sample" className="text-muted-foreground text-sm">
+        No brief to hand?
+      </label>
+      <select
+        id="sample"
+        disabled={disabled}
+        defaultValue=""
+        onChange={(event) => {
+          onPick(event.target.value);
+          // Reset so picking the same sample twice still fires — after editing
+          // the box, "give me that one again" is a real thing to want.
+          event.currentTarget.value = '';
+        }}
+        className="border-input bg-background focus-visible:ring-ring rounded-lg border px-2.5 py-1.5 text-sm
+                   focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+      >
+        <option value="" disabled>
+          Try a sample…
+        </option>
+        {SAMPLE_BRIEFS.map((sample) => (
+          <option key={sample.id} value={sample.id}>
+            {sample.label}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }

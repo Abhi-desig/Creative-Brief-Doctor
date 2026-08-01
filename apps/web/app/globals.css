@@ -316,3 +316,90 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Print — the report as a PDF.
+
+   "Share it as a PDF" is a real requirement: the report is a working document
+   between colleagues, and a good share of them will print to PDF and attach it
+   rather than forward a link. The page is already a single-column, max-width
+   document, so this is mostly forcing and hiding rather than re-laying-out.
+
+   The evidence lists are handled in the component rather than here: they are
+   rendered into the DOM and toggled with a class, precisely so `print:flex` can
+   reveal them. CSS cannot un-hide an element React never mounted.
+   ──────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Force the light token set regardless of the reader's theme. Dark mode prints
+     as either a solid black rectangle or, with backgrounds stripped, near-white
+     text on white. Neither is a document you would attach to an email. */
+  :root,
+  .dark,
+  [data-theme="dark"] {
+    color-scheme: light !important;
+    --background: #fff !important;
+    --foreground: #000 !important;
+    --card: #fff !important;
+    --card-foreground: #000 !important;
+    --muted: #f4f4f5 !important;
+    --muted-foreground: #3f3f46 !important;
+    --border: #d4d4d8 !important;
+    --viz-muted: #52525b !important;
+    --viz-track: #d4d4d8 !important;
+    --viz-fill: #18181b !important;
+  }
+
+  /* Shadows and rings cost toner and add nothing on paper; the border does the
+     separating. Backgrounds are forced through so the meters still read. */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  /* The comfortable density is tuned for a screen at arm's length; on paper the
+     same padding wastes most of a page. */
+  [data-density="comfortable"] [data-slot="card"] {
+    --card-spacing: 0.75rem !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+  }
+
+  /* Keep a dimension's heading, bar, rationale and evidence together rather than
+     letting a page break land between a score and what justifies it. */
+  [data-slot="card"],
+  section,
+  li {
+    break-inside: avoid;
+  }
+
+  h1, h2, h3 {
+    break-after: avoid;
+  }
+
+  /* A printed URL cannot be clicked, and an underline implies it can. The rubric
+     link is the one exception worth spelling out, handled below. */
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+
+  /* Give the reader the address of the standard the report was scored against,
+     since they cannot follow the link on paper. */
+  footer a[href="/rubric"]::after {
+    content: " (see the rubric at " attr(href) ")";
+    font-size: 0.75rem;
+  }
+
+  /* Tabs are an on-screen affordance. In print, show the question list and drop
+     the ready-to-send message: the recipient of a PDF is being sent the
+     questions, not the template for sending them. */
+  [data-slot="tabs-list"] {
+    display: none !important;
+  }
+}

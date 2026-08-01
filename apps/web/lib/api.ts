@@ -70,7 +70,14 @@ export interface QuestionPayload {
 }
 
 export interface ReportPayload {
-  brief: { publicId: string; title: string | null; charCount: number; createdAt: string };
+  brief: {
+    publicId: string;
+    title: string | null;
+    /** Powers the ready-to-send message's "Hi Sarah," rather than "Hi,". */
+    requester: string | null;
+    charCount: number;
+    createdAt: string;
+  };
   diagnosis: {
     publicId: string;
     overallScore: number;

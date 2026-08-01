@@ -118,7 +118,7 @@ function DimensionRowView({ row }: { row: DimensionRow }) {
             type="button"
             onClick={() => setShowEvidence((v) => !v)}
             aria-expanded={showEvidence}
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -mx-1 w-fit rounded-md px-1 text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none"
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -mx-1 w-fit rounded-md px-1 text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none print:hidden"
           >
             {showEvidence ? 'Hide' : 'Show'} what this is based on
             <span className="text-viz-muted ml-1.5 tabular-nums">
@@ -126,8 +126,16 @@ function DimensionRowView({ row }: { row: DimensionRow }) {
             </span>
           </button>
 
-          {showEvidence && (
-            <ul className="flex flex-col gap-2.5">
+          {/*
+            Always in the DOM, shown or hidden with CSS rather than mounted and
+            unmounted. `{showEvidence && <ul/>}` reads more naturally, but it makes
+            the printed report impossible: print styles cannot reveal an element
+            that was never rendered, and evidence is the part of this document that
+            makes a score defensible to someone reading it on paper.
+          */}
+          <ul
+            className={`flex-col gap-2.5 print:flex ${showEvidence ? 'flex' : 'hidden'}`}
+          >
               {row.evidence.map((quote, i) => (
                 <li
                   key={`${row.dimension}-${i}`}
@@ -138,8 +146,7 @@ function DimensionRowView({ row }: { row: DimensionRow }) {
                   <q className="text-pretty italic">{quote}</q>
                 </li>
               ))}
-            </ul>
-          )}
+          </ul>
         </div>
       )}
     </section>

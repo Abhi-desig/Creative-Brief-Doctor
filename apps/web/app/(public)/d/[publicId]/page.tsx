@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AuthorActions } from '@/components/report/author-actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { fetchReport } from '@/lib/api';
@@ -120,9 +122,16 @@ export default async function ReportPage({ params }: PageProps) {
             <CardTitle>Questions to send back</CardTitle>
           </CardHeader>
           <CardContent>
-            <QuestionsBlock questions={diagnosis.questions} briefTitle={brief.title} />
+            <QuestionsBlock
+              questions={diagnosis.questions}
+              briefTitle={brief.title}
+              requester={brief.requester}
+            />
           </CardContent>
         </Card>
+
+        {/* After the questions, never in a header — see AuthorActions. */}
+        <AuthorActions publicId={publicId} />
 
         {/*
           Provenance: rubric version and date ONLY.
@@ -130,10 +139,27 @@ export default async function ReportPage({ params }: PageProps) {
           gemini-2.5-flash" argues with the tooling instead of their brief. Full
           attribution lives in the database and the admin panel.
         */}
-        <footer className="text-viz-muted flex flex-wrap gap-x-2 gap-y-1 pt-2 text-sm">
-          <span>Rubric {diagnosis.rubricVersion}</span>
+        <footer className="text-viz-muted flex flex-wrap items-center gap-x-2 gap-y-1 pt-2 text-sm">
+          {/*
+            The rubric link is the highest-value outbound link on this page and
+            the only one compatible with the neutrality constraint, because it is
+            PROVENANCE rather than promotion: it answers "by what standard?"
+            without asking anyone to sign up. A stakeholder inclined to argue with
+            a score now has a legitimate place to argue.
+          */}
+          <Link
+            href="/rubric"
+            className="hover:text-foreground focus-visible:ring-ring rounded underline underline-offset-4
+                       focus-visible:ring-2 focus-visible:outline-none print:no-underline"
+          >
+            Rubric {diagnosis.rubricVersion}
+          </Link>
           <span aria-hidden="true">·</span>
           <span>Scored {scoredAt}</span>
+          <span aria-hidden="true">·</span>
+          {/* Document furniture, not navigation. The name belongs on something
+              that gets forwarded and printed; a nav bar does not. */}
+          <span>Creative Brief Doctor</span>
         </footer>
       </div>
     </Shell>
