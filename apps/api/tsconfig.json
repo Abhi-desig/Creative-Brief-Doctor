@@ -6,7 +6,11 @@
     // src only, so the build emits dist/main.js rather than dist/src/main.js.
     "rootDir": "src",
     "outDir": "./dist",
-    "baseUrl": "./",
+    // No `baseUrl`. It is deprecated and stops working in TypeScript 7, and this
+    // project never needed it: there are no `paths` mappings here, and every
+    // import is either relative, `node:`-prefixed, or a real package resolved
+    // through node_modules. Removed rather than silenced with
+    // `ignoreDeprecations`, which would only defer the same work.
     "composite": false,
     "declaration": false,
     "declarationMap": false,
