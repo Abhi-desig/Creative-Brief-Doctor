@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // noEmit, so rootDir only has to be wide enough to cover the includes —
+    // the app project keeps rootDir: "src" so `nest build` emits dist/main.js.
+    "rootDir": "..",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true
+  },
+  // The seed, the config and the scripts all run under tsx as ESM and are
+  // never part of the Nest CommonJS build, so they typecheck here.
+  "include": ["**/*.ts", "../src/**/*.ts", "../prisma/**/*.ts", "../prisma.config.ts", "../scripts/**/*.ts"]
+}

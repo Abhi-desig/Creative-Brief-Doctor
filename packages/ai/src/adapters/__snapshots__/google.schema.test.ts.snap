@@ -1,0 +1,299 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`toGeminiSchema — golden file > matches the recorded compilation of DiagnosisOutput 1`] = `
+{
+  "properties": {
+    "dimensions": {
+      "properties": {
+        "AUDIENCE_SPECIFICITY": {
+          "properties": {
+            "evidence": {
+              "description": "Verbatim quotes from the brief. Empty when the brief contains nothing relevant to this dimension.",
+              "items": {
+                "type": "STRING",
+              },
+              "type": "ARRAY",
+            },
+            "gaps": {
+              "description": "Concrete absences as short noun phrases. Empty when the score is 100.",
+              "items": {
+                "type": "STRING",
+              },
+              "maxItems": 5,
+              "type": "ARRAY",
+            },
+            "rationale": {
+              "description": "One to three sentences explaining which anchor the brief matched.",
+              "type": "STRING",
+            },
+            "score": {
+              "description": "One of 0, 20, 40, 60, 80, 100. No other value is permitted.",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "INTEGER",
+            },
+          },
+          "propertyOrdering": [
+            "score",
+            "rationale",
+            "gaps",
+            "evidence",
+          ],
+          "required": [
+            "score",
+            "rationale",
+            "gaps",
+            "evidence",
+          ],
+          "type": "OBJECT",
+        },
+        "CONSTRAINTS": {
+          "properties": {
+            "evidence": {
+              "description": "Verbatim quotes from the brief. Empty when the brief contains nothing relevant to this dimension.",
+              "items": {
+                "type": "STRING",
+              },
+              "type": "ARRAY",
+            },
+            "gaps": {
+              "description": "Concrete absences as short noun phrases. Empty when the score is 100.",
+              "items": {
+                "type": "STRING",
+              },
+              "maxItems": 5,
+              "type": "ARRAY",
+            },
+            "rationale": {
+              "description": "One to three sentences explaining which anchor the brief matched.",
+              "type": "STRING",
+            },
+            "score": {
+              "description": "One of 0, 20, 40, 60, 80, 100. No other value is permitted.",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "INTEGER",
+            },
+          },
+          "propertyOrdering": [
+            "score",
+            "rationale",
+            "gaps",
+            "evidence",
+          ],
+          "required": [
+            "score",
+            "rationale",
+            "gaps",
+            "evidence",
+          ],
+          "type": "OBJECT",
+        },
+        "MESSAGE_SUBSTANCE": {
+          "properties": {
+            "evidence": {
+              "description": "Verbatim quotes from the brief. Empty when the brief contains nothing relevant to this dimension.",
+              "items": {
+                "type": "STRING",
+              },
+              "type": "ARRAY",
+            },
+            "gaps": {
+              "description": "Concrete absences as short noun phrases. Empty when the score is 100.",
+              "items": {
+                "type": "STRING",
+              },
+              "maxItems": 5,
+              "type": "ARRAY",
+            },
+            "rationale": {
+              "description": "One to three sentences explaining which anchor the brief matched.",
+              "type": "STRING",
+            },
+            "score": {
+              "description": "One of 0, 20, 40, 60, 80, 100. No other value is permitted.",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "INTEGER",
+            },
+          },
+          "propertyOrdering": [
+            "score",
+            "rationale",
+            "gaps",
+            "evidence",
+          ],
+          "required": [
+            "score",
+            "rationale",
+            "gaps",
+            "evidence",
+          ],
+          "type": "OBJECT",
+        },
+        "OBJECTIVE_CLARITY": {
+          "properties": {
+            "evidence": {
+              "description": "Verbatim quotes from the brief. Empty when the brief contains nothing relevant to this dimension.",
+              "items": {
+                "type": "STRING",
+              },
+              "type": "ARRAY",
+            },
+            "gaps": {
+              "description": "Concrete absences as short noun phrases. Empty when the score is 100.",
+              "items": {
+                "type": "STRING",
+              },
+              "maxItems": 5,
+              "type": "ARRAY",
+            },
+            "rationale": {
+              "description": "One to three sentences explaining which anchor the brief matched.",
+              "type": "STRING",
+            },
+            "score": {
+              "description": "One of 0, 20, 40, 60, 80, 100. No other value is permitted.",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "INTEGER",
+            },
+          },
+          "propertyOrdering": [
+            "score",
+            "rationale",
+            "gaps",
+            "evidence",
+          ],
+          "required": [
+            "score",
+            "rationale",
+            "gaps",
+            "evidence",
+          ],
+          "type": "OBJECT",
+        },
+        "SUCCESS_METRICS": {
+          "properties": {
+            "evidence": {
+              "description": "Verbatim quotes from the brief. Empty when the brief contains nothing relevant to this dimension.",
+              "items": {
+                "type": "STRING",
+              },
+              "type": "ARRAY",
+            },
+            "gaps": {
+              "description": "Concrete absences as short noun phrases. Empty when the score is 100.",
+              "items": {
+                "type": "STRING",
+              },
+              "maxItems": 5,
+              "type": "ARRAY",
+            },
+            "rationale": {
+              "description": "One to three sentences explaining which anchor the brief matched.",
+              "type": "STRING",
+            },
+            "score": {
+              "description": "One of 0, 20, 40, 60, 80, 100. No other value is permitted.",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "INTEGER",
+            },
+          },
+          "propertyOrdering": [
+            "score",
+            "rationale",
+            "gaps",
+            "evidence",
+          ],
+          "required": [
+            "score",
+            "rationale",
+            "gaps",
+            "evidence",
+          ],
+          "type": "OBJECT",
+        },
+      },
+      "propertyOrdering": [
+        "OBJECTIVE_CLARITY",
+        "AUDIENCE_SPECIFICITY",
+        "MESSAGE_SUBSTANCE",
+        "CONSTRAINTS",
+        "SUCCESS_METRICS",
+      ],
+      "required": [
+        "OBJECTIVE_CLARITY",
+        "AUDIENCE_SPECIFICITY",
+        "MESSAGE_SUBSTANCE",
+        "CONSTRAINTS",
+        "SUCCESS_METRICS",
+      ],
+      "type": "OBJECT",
+    },
+    "questions": {
+      "items": {
+        "properties": {
+          "blocking": {
+            "description": "True only when the creative team cannot begin without the answer.",
+            "type": "BOOLEAN",
+          },
+          "dimension": {
+            "description": "The dimension this question addresses.",
+            "enum": [
+              "OBJECTIVE_CLARITY",
+              "AUDIENCE_SPECIFICITY",
+              "MESSAGE_SUBSTANCE",
+              "CONSTRAINTS",
+              "SUCCESS_METRICS",
+            ],
+            "type": "STRING",
+          },
+          "question": {
+            "description": "Answerable in one or two sentences. Collaborative in tone.",
+            "type": "STRING",
+          },
+          "rank": {
+            "description": "Send order, starting at 1, consecutive, no repeats.",
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "INTEGER",
+          },
+        },
+        "propertyOrdering": [
+          "dimension",
+          "question",
+          "blocking",
+          "rank",
+        ],
+        "required": [
+          "dimension",
+          "question",
+          "blocking",
+          "rank",
+        ],
+        "type": "OBJECT",
+      },
+      "maxItems": 8,
+      "minItems": 3,
+      "type": "ARRAY",
+    },
+    "summary": {
+      "description": "Two to four sentences addressed to the requester. Contains no overall score and no verdict.",
+      "type": "STRING",
+    },
+  },
+  "propertyOrdering": [
+    "summary",
+    "dimensions",
+    "questions",
+  ],
+  "required": [
+    "summary",
+    "dimensions",
+    "questions",
+  ],
+  "type": "OBJECT",
+}
+`;

@@ -1,0 +1,24 @@
+# Local Postgres only. The apps run on the host via `pnpm dev`.
+services:
+  postgres:
+    image: postgres:16.14-alpine   # pinned; :latest would drift under you
+    container_name: cbd-postgres
+    environment:
+      POSTGRES_USER: cbd
+      POSTGRES_PASSWORD: cbd
+      POSTGRES_DB: cbd
+    ports:
+      - '5432:5432'
+    volumes:
+      - cbd-pgdata:/var/lib/postgresql/data
+      # Creates the test database alongside the dev one on first boot.
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U cbd -d cbd']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  cbd-pgdata:

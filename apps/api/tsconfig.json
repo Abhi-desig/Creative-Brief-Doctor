@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    // src only, so the build emits dist/main.js rather than dist/src/main.js.
+    "rootDir": "src",
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "verbatimModuleSyntax": false,
+    "isolatedModules": false,
+    // The Nest starter ships without `strict`. Turned on, per the doc.
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "src/generated"]
+}

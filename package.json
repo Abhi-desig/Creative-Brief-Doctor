@@ -1,0 +1,21 @@
+{
+  "name": "creative-brief-doctor",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "dev": "turbo run dev"
+  },
+  "devDependencies": {
+    "turbo": "^2.10.7",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
