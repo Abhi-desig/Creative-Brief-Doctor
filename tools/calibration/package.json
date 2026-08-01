@@ -1,0 +1,14 @@
+{
+  "name": "calibration-spike",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Step 0 throwaway: score briefs against gemini-2.5-flash at the seed rubric and report score distribution, self-consistency, evidence health, and rubric compliance. Not application code.",
+  "scripts": {
+    "score": "node score.mjs",
+    "mock": "node score.mjs --mock"
+  },
+  "dependencies": {
+    "@google/genai": "^2.15.0"
+  }
+}

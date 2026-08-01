@@ -1,0 +1,20 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.DS_Store
+dist/
+.turbo/
+out/
+.next/
+*.tsbuildinfo
+
+# Per-machine Claude Code permission allowlist — contains absolute paths from this
+# checkout. `.claude/settings.json` (shared config) is deliberately NOT ignored.
+.claude/settings.local.json
+
+# Prisma's generated client. A build artifact, not source: `prisma:generate` is a
+# turbo task that both `build` and `typecheck` depend on, so it is always
+# regenerated before anything reads it. Committing it means 1MB of churn on every
+# schema change and a merge conflict in a file nobody edits.
+apps/api/src/generated/

@@ -1,0 +1,20 @@
+{
+  // Typechecks the test and conformance files, which tsconfig.json deliberately
+  // excludes so that `tsc -b` does not emit them into dist.
+  //
+  // Without this they were checked by NOTHING — see the note in
+  // packages/contracts/tsconfig.test.json. The conformance suite is the contract
+  // every adapter is held to, so it is the last place a type error should be able
+  // to hide.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false
+  },
+  // `extends` INHERITS `exclude`, so the parent's `src/**/*.test.ts` exclusion
+  // would still filter these out and this file would silently do nothing.
+  "exclude": [],
+  "include": ["src/**/*.ts"]
+}

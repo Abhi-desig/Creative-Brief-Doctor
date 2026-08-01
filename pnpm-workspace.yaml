@@ -1,0 +1,21 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm 11 gates postinstall scripts behind an explicit allowlist.
+allowBuilds:
+  esbuild: true # vitest's native binary
+  '@google/genai': true
+  protobufjs: true
+  '@swc/core': true # decorator metadata for Nest under vitest
+  '@nestjs/core': true
+  argon2: true # native argon2id binding
+  prisma: true
+  '@prisma/client': true
+  '@prisma/engines': true
+  unrs-resolver: true
+  '@scarf/scarf': false # telemetry only; deliberately denied
+  sharp: true            # Next.js image optimisation
+
+minimumReleaseAgeExclude:
+  - '@google/genai@2.15.0'

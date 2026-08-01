@@ -1,0 +1,405 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: var(--font-sans);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+/* ─────────────────────────────────────────────────────────────────────────────
+   Score visualisation tokens.
+
+   Values are the dataviz skill's validated blue ramp, converted to OKLCH.
+   Both modes were run through scripts/validate_palette.js:
+
+     light  fill  #2a78d6  categorical checks PASS
+            track #86b6ef  ordinal light-end contrast 2.06:1 PASS
+     dark   fill  #3987e5  categorical checks PASS
+            track #184f95  ordinal light-end contrast 2.15:1 PASS
+
+   The track is the QUIETEST step that still clears the 2:1 floor, so it recedes
+   without disappearing — a score of 12 has to read as "12 out of 100", not as a
+   lonely stub next to nothing.
+
+   ONE hue at every score. The five dimensions are nominal categories, so bar
+   LENGTH carries the score and colour carries nothing. That is deliberate and it
+   is the whole reason a low score cannot read as an error here: there is no red
+   end of the scale to land on. --destructive is never used for a score.
+   ──────────────────────────────────────────────────────────────────────────── */
+:root {
+  --viz-fill: oklch(0.5753 0.1626 255.53);
+  --viz-track: oklch(0.764 0.097 253.24);
+  --viz-grid: oklch(0.9055 0.0095 100);
+  --viz-muted: oklch(0.6233 0.0092 91.53);
+
+  /* Motion. One duration and one easing, so every transition agrees. */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
+
+  /* Two-layer elevation: a tight contact shadow plus a wide soft one. */
+  --shadow-soft:
+    0 1px 2px -1px oklch(0 0 0 / 0.06),
+    0 4px 16px -4px oklch(0 0 0 / 0.08);
+  --shadow-lifted:
+    0 2px 4px -2px oklch(0 0 0 / 0.08),
+    0 12px 32px -8px oklch(0 0 0 / 0.10);
+}
+
+.dark {
+  --viz-fill: oklch(0.6221 0.1612 255.05);
+  --viz-track: oklch(0.4327 0.1282 256.54);
+  --viz-grid: oklch(0.2924 0.0036 106.62);
+  --viz-muted: oklch(0.6233 0.0092 91.53);
+
+  /* Shadows barely register on dark surfaces; a hairline ring does the work. */
+  --shadow-soft:
+    0 1px 2px -1px oklch(0 0 0 / 0.4),
+    0 4px 16px -4px oklch(0 0 0 / 0.3);
+  --shadow-lifted:
+    0 2px 4px -2px oklch(0 0 0 / 0.5),
+    0 12px 32px -8px oklch(0 0 0 / 0.4);
+}
+
+@theme inline {
+  --color-viz-fill: var(--viz-fill);
+  --color-viz-track: var(--viz-track);
+  --color-viz-grid: var(--viz-grid);
+  --color-viz-muted: var(--viz-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Comfortable density — the public surface only.
+
+   Applied as [data-density="comfortable"] on the route-group layouts. /admin sits
+   outside those groups and keeps the compact defaults, which are right for a dense
+   operator tool and wrong for a document someone forwards to a client.
+
+   THIS BLOCK USED TO TARGET `.cn-*` CLASS NAMES AND DID ALMOST NOTHING.
+   `cn-card`, `cn-button` and the rest are the shadcn DOCS SITE's own showcase
+   infrastructure (registry/styles/style-nova.css); the published `shadcn` package
+   does not ship them, and our components emit none of them. Verified: `cn-`
+   appears zero times across our components and zero times in the installed
+   shadcn/tailwind.css. Of the thirteen rules, exactly one — the radius knob — had
+   any effect. The card padding, shadows, type sizes and button height that were
+   the entire point of "premium comfortable density" were inert.
+
+   The components key off `data-slot`, so that is what these rules key off now.
+   Two notes on why this is shorter than what it replaces rather than a
+   like-for-like translation:
+
+     - Card padding is ONE property, not three rules. The card sets
+       `--card-spacing` and derives its own gap, py and px (and its header's and
+       content's px) from it, so raising that variable moves all of them
+       coherently. The old block set padding on the card and left the header and
+       content at their compact values, which would have looked wrong even if the
+       selector had matched.
+     - The button rules are gone except for size. The base component already has
+       `transition-all` and an `active:translate-y-px` press, so re-specifying a
+       transition list and a 0.5px nudge would have been redundant at best and a
+       downgrade at worst. Height and horizontal padding are the real difference
+       between a dense panel control and a public one.
+
+   Everything here is unlayered, so it beats Tailwind's `@layer utilities` in the
+   cascade regardless of specificity — which is what lets these override the
+   components' own utility classes.
+   ──────────────────────────────────────────────────────────────────────────── */
+[data-density="comfortable"] {
+  /* One knob; the whole radius ramp is multiplicative off it. */
+  --radius: 0.75rem;
+
+  [data-slot="card"] {
+    /* 1.5rem, up from the compact --spacing(4) the component sets on itself.
+       Gap, vertical padding, and the header's and content's horizontal padding
+       all read from this. */
+    --card-spacing: calc(var(--spacing, 0.25rem) * 6);
+
+    box-shadow: var(--shadow-soft);
+    transition:
+      box-shadow var(--dur-base) var(--ease-out-soft),
+      border-color var(--dur-base) var(--ease-out-soft);
+  }
+
+  /* Tailwind's `sm`. Written as a media query rather than a `sm:` utility because
+     a custom property cannot be set by `@apply`. */
+  @media (width >= 40rem) {
+    [data-slot="card"] {
+      --card-spacing: calc(var(--spacing, 0.25rem) * 8);
+    }
+  }
+
+  [data-slot="card-title"] {
+    @apply tracking-tight;
+  }
+
+  /* A hair above the component layer's `text-sm`, with room to breathe. Prose a
+     stakeholder actually reads, rather than UI chrome. */
+  [data-slot="card-description"],
+  [data-slot="empty-description"] {
+    @apply text-[0.9375rem]/relaxed;
+  }
+
+  [data-slot="textarea"] {
+    @apply text-[0.9375rem]/relaxed;
+  }
+
+  [data-slot="empty"] {
+    @apply gap-5 rounded-xl p-10;
+  }
+
+  [data-slot="badge"] {
+    @apply h-auto px-2.5 py-1 text-xs;
+  }
+
+  [data-slot="tabs-list"] {
+    @apply p-1;
+  }
+
+  /* The one button change that is not already in the component's base classes. */
+  [data-slot="button"] {
+    @apply h-10 px-4;
+  }
+}
+
+@layer components {
+  /* The report's own type ramp. The component layer stays at sm/xs; page-level
+     headings need a real hierarchy for a document someone forwards. */
+  .report-display {
+    @apply text-6xl leading-none font-semibold tracking-[-0.03em] sm:text-7xl;
+    /* Proportional figures: tabular-nums makes a large number look loose. */
+    font-variant-numeric: proportional-nums;
+  }
+
+  .report-h1 {
+    @apply text-3xl leading-tight font-semibold tracking-[-0.02em] sm:text-4xl;
+  }
+
+  .report-h2 {
+    @apply text-xl font-semibold tracking-[-0.01em];
+  }
+
+  .report-lede {
+    @apply text-muted-foreground text-lg/relaxed text-pretty;
+  }
+}
+
+/* Every transition above is opt-out. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Print — the report as a PDF.
+
+   "Share it as a PDF" is a real requirement: the report is a working document
+   between colleagues, and a good share of them will print to PDF and attach it
+   rather than forward a link. The page is already a single-column, max-width
+   document, so this is mostly forcing and hiding rather than re-laying-out.
+
+   The evidence lists are handled in the component rather than here: they are
+   rendered into the DOM and toggled with a class, precisely so `print:flex` can
+   reveal them. CSS cannot un-hide an element React never mounted.
+   ──────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Force the light token set regardless of the reader's theme. Dark mode prints
+     as either a solid black rectangle or, with backgrounds stripped, near-white
+     text on white. Neither is a document you would attach to an email. */
+  :root,
+  .dark,
+  [data-theme="dark"] {
+    color-scheme: light !important;
+    --background: #fff !important;
+    --foreground: #000 !important;
+    --card: #fff !important;
+    --card-foreground: #000 !important;
+    --muted: #f4f4f5 !important;
+    --muted-foreground: #3f3f46 !important;
+    --border: #d4d4d8 !important;
+    --viz-muted: #52525b !important;
+    --viz-track: #d4d4d8 !important;
+    --viz-fill: #18181b !important;
+  }
+
+  /* Shadows and rings cost toner and add nothing on paper; the border does the
+     separating. Backgrounds are forced through so the meters still read. */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  /* The comfortable density is tuned for a screen at arm's length; on paper the
+     same padding wastes most of a page. */
+  [data-density="comfortable"] [data-slot="card"] {
+    --card-spacing: 0.75rem !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+  }
+
+  /* Keep a dimension's heading, bar, rationale and evidence together rather than
+     letting a page break land between a score and what justifies it. */
+  [data-slot="card"],
+  section,
+  li {
+    break-inside: avoid;
+  }
+
+  h1, h2, h3 {
+    break-after: avoid;
+  }
+
+  /* A printed URL cannot be clicked, and an underline implies it can. The rubric
+     link is the one exception worth spelling out, handled below. */
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+
+  /* Give the reader the address of the standard the report was scored against,
+     since they cannot follow the link on paper. */
+  footer a[href="/rubric"]::after {
+    content: " (see the rubric at " attr(href) ")";
+    font-size: 0.75rem;
+  }
+
+  /* Tabs are an on-screen affordance. In print, show the question list and drop
+     the ready-to-send message: the recipient of a PDF is being sent the
+     questions, not the template for sending them. */
+  [data-slot="tabs-list"] {
+    display: none !important;
+  }
+}

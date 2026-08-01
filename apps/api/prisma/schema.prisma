@@ -1,0 +1,296 @@
+// Creative Brief Doctor — data model.
+//
+// Three constraints in this file are NOT expressible in Prisma schema language
+// and live in a hand-written migration instead: the one-ACTIVE-per-template
+// partial unique index, the AppSetting singleton CHECK, and the BEFORE UPDATE
+// trigger enforcing non-draft prompt immutability. See
+// migrations/20260731000001_database_level_constraints/migration.sql. That
+// migration must never be squashed away.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  // The generated client defaults to ESM and uses `import.meta.url`, which makes
+  // Node treat the tsc-emitted CommonJS as ESM and fail with "exports is not
+  // defined in ES module scope". Nest builds to CommonJS, so the generator has
+  // to match. Revisit if the API moves to ESM under NestJS 12.
+  moduleFormat = "cjs"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7 removed `url` and `directUrl` from this block. Connection URLs now
+  // live in prisma.config.ts (migrations, unpooled) and in the driver adapter in
+  // PrismaService (runtime, pooled). See prisma.config.ts for why that split
+  // still matters on Neon and Supabase.
+}
+
+model Brief {
+  id        String      @id @default(cuid())
+  publicId  String      @unique // nanoid, URL-safe, used in shareable links
+  rawText   String
+  charCount Int
+  title     String?
+  requester String? // free-text stakeholder label — the benchmarking seed
+  createdAt DateTime    @default(now())
+  diagnoses Diagnosis[]
+
+  /// Non-null marks this as a seeded gallery example, and holds the one-line
+  /// description of WHAT SHAPE of brief it represents ("a two-line Slack
+  /// request"). A flag plus a separate copy table would be two things to keep in
+  /// step for a set of six rows; the presence of the copy is the flag.
+  exampleShape String?
+
+  @@index([createdAt])
+  @@index([exampleShape])
+}
+
+model Diagnosis {
+  id       String @id @default(cuid())
+  publicId String @unique
+  briefId  String
+  brief    Brief  @relation(fields: [briefId], references: [id], onDelete: Cascade)
+
+  overallScore Int // computed server-side, never by the model
+  verdict      Verdict
+  summary      String
+
+  // --- provenance: what produced this score (principle 1) ---
+  provider             ProviderKind
+  model                String
+  providerRequestId    String?
+  promptVersionId      String
+  promptVersion        PromptVersion  @relation(fields: [promptVersionId], references: [id])
+  promptHash           String // must equal promptVersion.contentHash
+  rubricVersion        String // human label, denormalized for display
+  params               Json // snapshot of what was actually sent
+  structuredOutputMode StructuredMode
+  degradations         Json
+  retryCount           Int            @default(0)
+
+  // --- economics ---
+  inputTokens     Int
+  outputTokens    Int
+  cacheReadTokens Int         @default(0)
+  cacheWriteTokens Int        @default(0)
+  reasoningTokens Int         @default(0)
+  tokenSource     TokenSource
+  costUsd         Decimal?    @db.Decimal(12, 6) // null = pricing not configured
+  latencyMs       Int
+
+  createdAt  DateTime           @default(now())
+  dimensions DimensionScore[]
+  questions  FollowUpQuestion[]
+
+  @@index([briefId])
+  @@index([provider, model, createdAt]) // the benchmarking query
+  @@index([promptVersionId, createdAt])
+  @@index([createdAt]) // the daily quota / spend query
+}
+
+model DimensionScore {
+  id          String    @id @default(cuid())
+  diagnosisId String
+  diagnosis   Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  dimension   Dimension
+  score       Int // 0-100, clamped in code — no provider guarantees it
+  rationale   String
+  gaps        String[]
+  evidence    String[] // quotes from the brief — makes the score auditable
+
+  @@unique([diagnosisId, dimension])
+}
+
+model FollowUpQuestion {
+  id          String    @id @default(cuid())
+  diagnosisId String
+  diagnosis   Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  dimension   Dimension
+  question    String
+  blocking    Boolean // "lock before we start" vs "nice to have"
+  rank        Int
+
+  @@index([diagnosisId])
+}
+
+// ─── AI configuration ────────────────────────────────────────────────────────
+
+model AiProvider {
+  id            String         @id @default(cuid())
+  kind          ProviderKind
+  label         String // "Gemini (free tier)"
+  baseUrl       String?
+  keyCiphertext Bytes? // AES-256-GCM
+  keyIv         Bytes?
+  keyTag        Bytes?
+  keyLast4      String?
+  keyVersion    Int            @default(1)
+  status        ProviderStatus @default(UNTESTED)
+  lastPingAt    DateTime?
+  lastPingMs    Int?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  activeIn      AppSetting[]
+
+  @@unique([kind, label])
+}
+
+model AppSetting {
+  id               String      @id @default("singleton") // enforced by a CHECK in the hand-written migration
+  activeProviderId String?
+  activeProvider   AiProvider? @relation(fields: [activeProviderId], references: [id])
+  activeModel      String?
+  maxTokens        Int         @default(16000)
+  temperature      Float? // null when the model rejects it
+  topP             Float?
+  thinkingBudget   Int?
+  timeoutMs        Int         @default(120000)
+  maxRetries       Int         @default(3)
+  tokenCeiling     Int         @default(12000)
+  dailyCallCap     Int         @default(400) // free-tier quota guard
+  costCeilingUsd   Decimal     @default(0.50) @db.Decimal(10, 4)
+  updatedAt        DateTime    @updatedAt
+  updatedBy        String?
+}
+
+model ModelPricing {
+  id                String       @id @default(cuid())
+  provider          ProviderKind
+  model             String
+  inputPerMTok      Decimal      @db.Decimal(10, 4)
+  outputPerMTok     Decimal      @db.Decimal(10, 4)
+  cachedReadPerMTok Decimal?     @db.Decimal(10, 4)
+  cacheWritePerMTok Decimal?     @db.Decimal(10, 4)
+  currency          String       @default("USD")
+  effectiveFrom     DateTime     @default(now())
+
+  @@unique([provider, model, effectiveFrom])
+}
+
+// ─── Prompt versioning ───────────────────────────────────────────────────────
+
+model PromptTemplate {
+  id        String          @id @default(cuid())
+  key       String          @unique // "rubric"
+  name      String
+  versions  PromptVersion[]
+  createdAt DateTime        @default(now())
+}
+
+model PromptVersion {
+  id          String         @id @default(cuid())
+  templateId  String
+  template    PromptTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  label       String // "v1" — never interpolated into content
+  content     String // immutable once status != DRAFT, enforced by trigger
+  contentHash String // SHA-256 of content
+  status      PromptStatus   @default(DRAFT)
+  changeNote  String
+  createdBy   String
+  createdAt   DateTime       @default(now())
+  activatedAt DateTime?
+  activatedBy String?
+  diagnoses   Diagnosis[]
+  testRuns    PromptTestRun[]
+  activations PromptActivation[]
+
+  @@unique([templateId, label])
+  @@index([templateId, status])
+}
+
+/// Activation is an event, so rollback is a new record rather than a mutation.
+model PromptActivation {
+  id              String        @id @default(cuid())
+  promptVersionId String
+  promptVersion   PromptVersion @relation(fields: [promptVersionId], references: [id], onDelete: Cascade)
+  actor           String
+  reason          String
+  /// The version that was active immediately before, for an audit trail.
+  previousVersionId String?
+  createdAt       DateTime      @default(now())
+
+  @@index([promptVersionId, createdAt])
+}
+
+model PromptTestRun {
+  id              String        @id @default(cuid())
+  promptVersionId String
+  promptVersion   PromptVersion @relation(fields: [promptVersionId], references: [id], onDelete: Cascade)
+  provider        ProviderKind
+  model           String
+  briefText       String
+  params          Json
+  rawOutput       String
+  parsedOutput    Json?
+  stopReason      String
+  overallScore    Int?
+  inputTokens     Int
+  outputTokens    Int
+  latencyMs       Int
+  costUsd         Decimal?      @db.Decimal(12, 6)
+  error           String?
+  createdBy       String
+  createdAt       DateTime      @default(now())
+
+  @@index([promptVersionId, createdAt])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actor      String // email, or "system" for bootstrap
+  action     String // "provider.create", "prompt.activate", "settings.update"
+  targetType String
+  targetId   String?
+  before     Json? // secrets redacted before write
+  after      Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action, createdAt])
+}
+
+enum Dimension {
+  OBJECTIVE_CLARITY
+  AUDIENCE_SPECIFICITY
+  MESSAGE_SUBSTANCE
+  CONSTRAINTS
+  SUCCESS_METRICS
+}
+
+enum Verdict {
+  READY
+  NEEDS_WORK
+  NOT_READY
+}
+
+enum ProviderKind {
+  GOOGLE
+  ANTHROPIC
+}
+
+enum ProviderStatus {
+  UNTESTED
+  OK
+  FAILING
+  DISABLED
+}
+
+enum PromptStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum StructuredMode {
+  NATIVE_SCHEMA
+  JSON_MODE
+  PROMPT_ONLY
+}
+
+enum TokenSource {
+  NATIVE
+  ESTIMATED
+}
