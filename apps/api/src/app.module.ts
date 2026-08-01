@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
@@ -20,6 +21,24 @@ import { AllExceptionsFilter } from './common/all-exceptions.filter.js';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      /**
+       * The .env lives at the REPO ROOT, not next to this file.
+       *
+       * Nothing loaded it before: ConfigModule's default is `<cwd>/.env`, the CLI
+       * runs from apps/api, and there is no .env there — so a fresh checkout
+       * could not boot without the developer exporting every variable by hand,
+       * and the failure surfaced as a Prisma "database does not exist" rather
+       * than anything mentioning configuration.
+       *
+       * Both paths are listed so it works whether the process is started from
+       * apps/api (`pnpm dev`) or from the monorepo root (`turbo run dev`). A
+       * missing file is not an error — in production the platform supplies the
+       * environment and no .env exists at all.
+       */
+      envFilePath: [
+        path.resolve(process.cwd(), '.env'),
+        path.resolve(process.cwd(), '../../.env'),
+      ],
       // Infrastructure only. No provider key is required at boot.
       validate: validateEnv,
       cache: true,

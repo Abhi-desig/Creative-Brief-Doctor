@@ -2,8 +2,23 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { config as loadEnv } from 'dotenv';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
+
+/**
+ * Loaded here, before the client is constructed.
+ *
+ * `prisma db seed` reads prisma.config.ts, which loads this file itself — but
+ * `pnpm --filter @cbd/api seed` runs `tsx prisma/seed/seed.ts` directly and skips
+ * that entirely, leaving DATABASE_URL undefined. The adapter then fell back to a
+ * database named after the OS user and failed with "DatabaseDoesNotExist", which
+ * points at the wrong problem.
+ */
+loadEnv({
+  path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../.env'),
+  quiet: true,
+});
 
 /**
  * Seeds the rubric from apps/api/prisma/seed/rubric-v1.md and the price rows.
