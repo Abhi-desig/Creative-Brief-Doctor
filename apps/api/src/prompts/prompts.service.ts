@@ -97,6 +97,43 @@ export class PromptsService {
   }
 
   /**
+   * Any version, as a snapshot — including a DRAFT.
+   *
+   * `activeSnapshot` deliberately refuses anything not ACTIVE, which is right for
+   * scoring a member of the public's brief. Testing a draft is the one legitimate
+   * case for running unpublished content, so it gets its own method rather than a
+   * flag on that one: the call site reads as "test this specific version", and no
+   * accidental argument can make the public path score a draft.
+   */
+  async snapshotOf(versionId: string): Promise<PromptSnapshot> {
+    const version = await this.prisma.promptVersion.findUnique({
+      where: { id: versionId },
+      select: { id: true, label: true, content: true, contentHash: true },
+    });
+    if (!version) throw new NotFoundException('Prompt version not found.');
+
+    // The same integrity check the active path makes. A draft whose hash has
+    // drifted is still a draft worth refusing — testing content that does not
+    // match what is stored would produce a result attributed to the wrong bytes.
+    const computed = hashContent(version.content);
+    if (computed !== version.contentHash) {
+      throw new BadRequestException({
+        code: 'PROMPT_HASH_MISMATCH',
+        message:
+          'This version\'s content does not match its stored hash. '
+          + 'Refusing to run it.',
+      });
+    }
+
+    return {
+      promptVersionId: version.id,
+      content: version.content,
+      contentHash: version.contentHash,
+      label: version.label,
+    };
+  }
+
+  /**
    * Editing a non-draft forks a new DRAFT seeded from it. The service never
    * attempts an in-place update of a non-draft — the trigger would refuse — so
    * the fork is the only path, by construction.

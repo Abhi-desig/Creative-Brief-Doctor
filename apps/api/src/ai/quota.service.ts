@@ -38,6 +38,26 @@ export interface QuotaStatus {
   exhausted: boolean;
 }
 
+/**
+ * What the PUBLIC endpoint returns: a coarse state and a reset time, never a
+ * count.
+ *
+ * Raw numbers are withheld on purpose. "3 of 400 left" invites racing for the
+ * last call, advertises how small the tier is, and is misleading anyway — it is
+ * meaningless next to the per-IP 10-per-hour limit the visitor cannot see, so a
+ * cheerful "397 remaining" can sit next to a 429. A state is the honest amount of
+ * detail: it answers "can I press the button" and nothing else.
+ */
+export type QuotaState = 'open' | 'limited' | 'closed';
+
+export interface PublicQuota {
+  state: QuotaState;
+  resetsAt: string;
+}
+
+/** Below this fraction remaining, the day is reported as `limited`. */
+const LIMITED_THRESHOLD = 0.15;
+
 @Injectable()
 export class QuotaService {
   private readonly logger = new Logger(QuotaService.name);
@@ -68,6 +88,33 @@ export class QuotaService {
       resetsAt: nextUtcDay(now),
       exhausted: used >= effectiveCap,
     };
+  }
+
+  /**
+   * The public capacity signal. Lets the paste page disable the button BEFORE
+   * someone commits their brief to the textarea, rather than after.
+   *
+   * Degrades to `closed` rather than throwing: this is called to render a chip on
+   * a page that must still work, so a database hiccup should grey the button out,
+   * not 500 the page. `closed` is the safe direction — it under-promises.
+   */
+  async publicStatus(now = new Date()): Promise<PublicQuota> {
+    try {
+      const status = await this.status(undefined, now);
+      const fraction = status.cap > 0 ? status.remaining / status.cap : 0;
+      const state: QuotaState = status.exhausted
+        ? 'closed'
+        : fraction <= LIMITED_THRESHOLD
+          ? 'limited'
+          : 'open';
+      return { state, resetsAt: status.resetsAt.toISOString() };
+    } catch (error) {
+      this.logger.warn(
+        `Could not read quota for the public chip; reporting closed. `
+        + `${error instanceof Error ? error.message : String(error)}`,
+      );
+      return { state: 'closed', resetsAt: nextUtcDay(now).toISOString() };
+    }
   }
 
   /**

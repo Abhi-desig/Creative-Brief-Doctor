@@ -36,6 +36,16 @@ export interface PromptSnapshot {
 
 export interface EngineResult {
   aggregated: AggregatedDiagnosis;
+  /**
+   * The provider's response text, exactly as received.
+   *
+   * The diagnosis path ignores this on purpose — it persists the parsed,
+   * aggregated result and nothing raw. It is surfaced for the admin prompt
+   * test-draft screen, where reading what the model ACTUALLY said is the entire
+   * point of running a draft, especially when parsing failed and the aggregated
+   * view is the least informative thing available.
+   */
+  rawOutput: string;
   usage: NormalizedUsage;
   stopReason: StopReason;
   structuredOutputMode: StructuredMode;
@@ -212,6 +222,7 @@ export async function run(
 
   return {
     aggregated,
+    rawOutput: response.raw,
     usage: response.usage,
     stopReason: response.stopReason,
     structuredOutputMode: response.structuredOutputMode,

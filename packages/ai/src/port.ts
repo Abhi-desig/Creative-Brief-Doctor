@@ -77,9 +77,24 @@ export interface Degradation {
  * on another, which quietly corrupts every cost figure.
  */
 export interface NormalizedUsage {
+  /**
+   * ALL prompt tokens, INCLUDING any served from cache.
+   *
+   * The same class of convention as `reasoningTokens` above, and the same class
+   * of bug if an adapter gets it wrong. Vendors disagree natively: Gemini's
+   * `promptTokenCount` is the whole prompt with `cachedContentTokenCount` as a
+   * subset of it, while Anthropic reports `input_tokens` with cache reads
+   * alongside rather than within. Adapters normalize to INCLUSIVE.
+   *
+   * Consequence for anything that prices this: freshly-processed input is
+   * `inputTokens - cachedReadTokens`, never `inputTokens`. Billing the full
+   * figure at the fresh rate and the cached figure again at the cached rate
+   * double-charges the cached portion, and does so invisibly — the total merely
+   * looks a little high.
+   */
   inputTokens: number;
   outputTokens: number;
-  /** 0 where the vendor has no usable caching, or where nothing was cached. */
+  /** A SUBSET of `inputTokens`. 0 where the vendor has no usable caching. */
   cachedReadTokens: number;
   cachedWriteTokens: number;
   /** Excluded from `outputTokens`. See the note above. */

@@ -9,6 +9,7 @@ import { AuditInterceptor } from './audit.interceptor.js';
 import { AdminProvidersController } from './providers.controller.js';
 import { AdminPromptsController } from './prompts.controller.js';
 import { AdminStatusController } from './status.controller.js';
+import { AdminSettingsController } from './settings.controller.js';
 
 @Module({
   imports: [AiModule, PromptsModule],
@@ -17,6 +18,7 @@ import { AdminStatusController } from './status.controller.js';
     AdminProvidersController,
     AdminPromptsController,
     AdminStatusController,
+    AdminSettingsController,
   ],
   providers: [AdminAuthService, AdminAuthGuard, AdminCsrfGuard, AuditInterceptor],
   exports: [AdminAuthService],

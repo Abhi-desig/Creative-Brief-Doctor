@@ -4,8 +4,10 @@ import { AIError, type Degradation } from '@cbd/ai';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ProviderRegistry } from '../ai/provider-registry.service.js';
 import { QuotaService } from '../ai/quota.service.js';
+import { PricingService } from '../ai/pricing.service.js';
 import { PromptsService } from '../prompts/prompts.service.js';
 import { run, type EngineParams } from './scoring/engine.js';
+import { EventQueue, interleave } from '../common/interleave.js';
 
 /**
  * Orchestration around the engine. Everything provider-specific lives behind
@@ -31,6 +33,7 @@ export class DiagnosisService {
     private readonly registry: ProviderRegistry,
     private readonly quota: QuotaService,
     private readonly prompts: PromptsService,
+    private readonly pricing: PricingService,
   ) {}
 
   async createBrief(input: { text: string; title?: string; requester?: string }) {
@@ -70,6 +73,12 @@ export class DiagnosisService {
       brief: {
         publicId: brief.publicId,
         title: brief.title,
+        // Who the brief came from. The report page uses it for one thing only:
+        // turning the ready-to-send message's `Hi,` into `Hi Sarah,`. That
+        // message is the artefact this product exists to produce, and a generic
+        // salutation is the difference between something you send and something
+        // you rewrite first.
+        requester: brief.requester,
         charCount: brief.charCount,
         createdAt: brief.createdAt,
       },
@@ -137,21 +146,33 @@ export class DiagnosisService {
     const prompt = await this.prompts.activeSnapshot();
     const params: EngineParams = { ...active.params, model: active.model };
 
+    /**
+     * `scoring` has to reach the browser WHEN the first token arrives, not after
+     * the generation finishes.
+     *
+     * This previously pushed into an array from inside `onFirstToken` and drained
+     * it after `await run(...)` returned — but a callback nested inside an await
+     * cannot yield from the enclosing generator, so the event was emitted after
+     * the fact. The client sat on "Reading the brief" for the whole 22-33s
+     * generation and then got scoring/saving/result back to back. See
+     * common/interleave.ts for why a queue is the fix.
+     */
     let announced = false;
-    const events: DiagnosisEvent[] = [];
-    const result = await run(active.provider, prompt, brief.rawText, params, {
-      signal,
-      onFirstToken: () => {
-        if (!announced) {
+    const queue = new EventQueue<DiagnosisEvent>();
+    const result = yield* interleave(
+      run(active.provider, prompt, brief.rawText, params, {
+        signal,
+        onFirstToken: () => {
+          if (announced) return;
           announced = true;
-          events.push({ type: 'status', data: { phase: 'scoring' satisfies StatusPhase } });
-        }
-      },
-    });
-    // Flush whatever the callback queued. The engine awaits internally, so this
-    // is emitted after the fact rather than interleaved — the browser only cares
-    // that it arrives before the result.
-    for (const event of events) yield event;
+          queue.push({ type: 'status', data: { phase: 'scoring' satisfies StatusPhase } });
+        },
+      }),
+      queue,
+    );
+    // A provider without streaming support never fires the callback, so the phase
+    // is still announced — just not early. The wire contract stays identical
+    // whichever path ran.
     if (!announced) yield { type: 'status', data: { phase: 'scoring' satisfies StatusPhase } };
 
     yield { type: 'status', data: { phase: 'saving' satisfies StatusPhase } };
@@ -167,6 +188,11 @@ export class DiagnosisService {
     result: Awaited<ReturnType<typeof run>>,
   ) {
     const { aggregated, usage } = result;
+
+    // Priced before the write so the row is complete on insert; a later UPDATE
+    // would leave a window where the diagnosis exists with no cost and make the
+    // admin spend total depend on when it was read.
+    const costUsd = await this.pricing.costOf(active.providerKind, active.model, usage);
 
     const diagnosis = await this.prisma.diagnosis.create({
       data: {
@@ -193,9 +219,10 @@ export class DiagnosisService {
         cacheWriteTokens: usage.cachedWriteTokens,
         reasoningTokens: usage.reasoningTokens,
         tokenSource: usage.tokenSource === 'native' ? 'NATIVE' : 'ESTIMATED',
-        // Left null when no price row exists. A silent zero in a cost figure is
-        // worse than a gap.
-        costUsd: null,
+        // Still null when no price row exists — a silent zero in a cost figure is
+        // worse than a gap — but now actually computed when one does. Gemini's
+        // free tier has no price table, so null remains the expected value there.
+        costUsd,
         latencyMs: result.latencyMs,
 
         dimensions: {

@@ -47,6 +47,27 @@ export interface ResolvedConfig {
     | null;
 }
 
+/**
+ * A partial update of the singleton.
+ *
+ * `undefined` leaves a field untouched; an explicit `null` on the three nullable
+ * params clears it, which is how a model that rejects `temperature` gets that
+ * column emptied rather than left at a stale value.
+ */
+export interface SettingsUpdate {
+  activeProviderId?: string | undefined;
+  activeModel?: string | undefined;
+  maxTokens?: number | undefined;
+  temperature?: number | null | undefined;
+  topP?: number | null | undefined;
+  thinkingBudget?: number | null | undefined;
+  timeoutMs?: number | undefined;
+  maxRetries?: number | undefined;
+  tokenCeiling?: number | undefined;
+  dailyCallCap?: number | undefined;
+  costCeilingUsd?: number | undefined;
+}
+
 export type PromptHashCheck =
   | { status: 'no-active-version'; matches: false }
   | {
@@ -261,6 +282,74 @@ export class SettingsService {
     });
 
     this.logger.log(`Bootstrapped provider ${kind} with model ${model} from env.`);
+  }
+
+  /**
+   * The only write path for AppSetting outside first-boot bootstrap.
+   *
+   * Its absence is why "add a second provider in the panel and re-score without
+   * restarting" was impossible: `maybeBootstrap` is env-driven, one-shot, and
+   * explicitly refuses to overwrite an existing configuration, so once a row
+   * existed nothing in the running process could change the active provider or
+   * model. The schema, the migration, the audit interceptor's `AppSetting`
+   * mapping and the throttle tier were all in place; only this was missing.
+   *
+   * Upserts the singleton in one statement and then invalidates the cache, so the
+   * next `resolve()` — including the one the very next diagnosis makes — sees the
+   * new provider without a restart.
+   */
+  async update(input: SettingsUpdate, actor: string): Promise<ResolvedConfig> {
+    const before = await this.prisma.appSetting.findUnique({ where: { id: 'singleton' } });
+
+    /**
+     * `undefined` means "leave alone" and must never reach Prisma as an explicit
+     * null, or a PATCH of one field would blank every other. Nullable columns
+     * (the three optional model params) accept an explicit null to CLEAR them,
+     * which is a distinct and meaningful operation — so those are threaded
+     * through as-is rather than being filtered out with the undefineds.
+     */
+    const data = {
+      ...(input.activeProviderId !== undefined
+        ? { activeProviderId: input.activeProviderId }
+        : {}),
+      ...(input.activeModel !== undefined ? { activeModel: input.activeModel } : {}),
+      ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
+      ...(input.temperature !== undefined ? { temperature: input.temperature } : {}),
+      ...(input.topP !== undefined ? { topP: input.topP } : {}),
+      ...(input.thinkingBudget !== undefined ? { thinkingBudget: input.thinkingBudget } : {}),
+      ...(input.timeoutMs !== undefined ? { timeoutMs: input.timeoutMs } : {}),
+      ...(input.maxRetries !== undefined ? { maxRetries: input.maxRetries } : {}),
+      ...(input.tokenCeiling !== undefined ? { tokenCeiling: input.tokenCeiling } : {}),
+      ...(input.dailyCallCap !== undefined ? { dailyCallCap: input.dailyCallCap } : {}),
+      ...(input.costCeilingUsd !== undefined ? { costCeilingUsd: input.costCeilingUsd } : {}),
+      updatedBy: actor,
+    };
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.appSetting.upsert({
+        where: { id: 'singleton' },
+        create: { id: 'singleton', ...data },
+        update: data,
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actor,
+          action: 'settings.update',
+          targetType: 'AppSetting',
+          targetId: 'singleton',
+          // No credential is reachable from this table, so neither snapshot needs
+          // redaction — AppSetting holds a provider ID, never a key.
+          before: (before ?? null) as never,
+          after: data as never,
+        },
+      });
+    });
+
+    // Before returning, not after: the caller reads the fresh configuration and a
+    // stale cache here would make the panel look like it silently ignored the
+    // save.
+    this.invalidate();
+    return this.resolve();
   }
 
   /**
