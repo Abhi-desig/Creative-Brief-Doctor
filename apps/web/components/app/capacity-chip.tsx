@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useCapacity, type Capacity } from '@/lib/use-capacity';
+import { useHydrated } from '@/lib/use-hydrated';
 
 const COPY: Record<Capacity['state'], string> = {
   open: 'Capacity today · open',
@@ -22,8 +22,7 @@ const COPY: Record<Capacity['state'], string> = {
  */
 export function CapacityChip() {
   const capacity = useCapacity();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   // Nothing until known: a chip that says "open" and then corrects itself to
   // "closed" is worse than one that appears a moment late.

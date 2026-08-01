@@ -2,11 +2,19 @@
 
 import { useState } from 'react';
 import { CheckIcon, CopyIcon } from 'lucide-react';
-import type { Dimension } from '@cbd/contracts';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { DIMENSION_LABEL } from './dimension-bars';
+import {
+  buildMessage,
+  buildPlainText,
+  canonicalise,
+  type QuestionRow,
+} from '@/lib/questions';
+
+// Re-exported so the report page's import site is unchanged.
+export type { QuestionRow };
 
 /**
  * Follow-up questions with copy-to-clipboard — the highest-value interaction in
@@ -16,49 +24,6 @@ import { DIMENSION_LABEL } from './dimension-bars';
  * list to work from, and a ready-to-send message to paste into email or Slack.
  * Tone is collaborative throughout — never "your brief is bad".
  */
-
-export interface QuestionRow {
-  dimension: Dimension;
-  question: string;
-  blocking: boolean;
-  rank: number;
-}
-
-/** A question with the ONE number it is known by everywhere on this page. */
-interface NumberedQuestion extends QuestionRow {
-  n: number;
-}
-
-/**
- * Establishes the canonical order and numbering, once.
- *
- * The same question previously carried three different numbers on one page: the
- * on-screen list printed the model's raw `rank`, the copied text printed its
- * position after sorting, and the ready-to-send message regrouped blocking
- * questions first and numbered from 1 again. So a question could be "3" in the
- * list, "2" in the copy, and "5" in the message — and the whole point of these is
- * that two people discuss them over email.
- *
- * `rank` cannot be trusted to be consecutive or unique either: the rubric asks
- * for that in a `.describe()` string, which is a request to a model, not a
- * constraint. Duplicates also collided as React keys.
- *
- * Blocking-first is the canonical order because the message already grouped that
- * way and that grouping is worth keeping — it is the part a recipient acts on.
- * Within each group the model's own ranking is preserved, since the rubric asks
- * it to rank in the order it would actually send them.
- */
-function canonicalise(questions: QuestionRow[]): NumberedQuestion[] {
-  return [...questions]
-    .sort((a, b) => {
-      if (a.blocking !== b.blocking) return a.blocking ? -1 : 1;
-      if (a.rank !== b.rank) return a.rank - b.rank;
-      // Total order even when the model repeats a rank, so the numbering is
-      // stable across re-renders rather than depending on sort implementation.
-      return a.question.localeCompare(b.question);
-    })
-    .map((q, i) => ({ ...q, n: i + 1 }));
-}
 
 export function QuestionsBlock({
   questions,
@@ -72,7 +37,7 @@ export function QuestionsBlock({
   const ordered = canonicalise(questions);
   const blocking = ordered.filter((q) => q.blocking);
 
-  const plainText = ordered.map((q) => `${q.n}. ${q.question}`).join('\n');
+  const plainText = buildPlainText(ordered);
 
   const messageText = buildMessage(ordered, briefTitle, requester ?? null);
 
@@ -161,68 +126,4 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       {copied ? 'Copied' : label}
     </Button>
   );
-}
-
-/**
- * The pre-written message. Deliberately opens by thanking and closes by making
- * it easy to answer — this is the artefact that gets forwarded, so its tone is
- * the product's tone.
- */
-function buildMessage(
-  questions: NumberedQuestion[],
-  briefTitle: string | null,
-  requester: string | null,
-): string {
-  const subject = briefTitle ? `the ${briefTitle} brief` : 'the brief';
-  const blocking = questions.filter((q) => q.blocking);
-  const rest = questions.filter((q) => !q.blocking);
-
-  /**
-   * The whole reason `requester` is captured and carried through the API's report
-   * projection: "Hi Sarah," is something you send, "Hi," is something you edit
-   * first. Trimmed and first-name-only — the field is free text and someone will
-   * paste "Sarah Chen (Marketing)" into it.
-   */
-  const name = requester?.trim().split(/\s+/)[0];
-  const greeting = name ? `Hi ${name},` : 'Hi,';
-
-  const lines: string[] = [
-    greeting,
-    ``,
-    `Thanks for ${subject} — there's a lot here to work with. Before we start, a `
-      + `few things would help us get it right first time.`,
-    ``,
-  ];
-
-  if (blocking.length > 0) {
-    lines.push(
-      blocking.length === questions.length
-        ? `These would each unblock a decision:`
-        : `These would unblock a start:`,
-      ``,
-      // `q.n`, not a fresh counter. The numbers here match the on-screen list
-      // exactly, which is what makes "can you look at 4?" mean one thing.
-      ...blocking.map((q) => `${q.n}. ${q.question}`),
-      ``,
-    );
-  }
-
-  if (rest.length > 0) {
-    lines.push(
-      blocking.length > 0
-        ? `And these would sharpen the work, though we can begin without them:`
-        : `These would sharpen the work:`,
-      ``,
-      ...rest.map((q) => `${q.n}. ${q.question}`),
-      ``,
-    );
-  }
-
-  lines.push(
-    `A sentence or two on each is plenty — no need to rewrite anything.`,
-    ``,
-    `Thanks!`,
-  );
-
-  return lines.join('\n');
 }

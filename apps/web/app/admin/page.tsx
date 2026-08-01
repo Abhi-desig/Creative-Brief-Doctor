@@ -48,8 +48,13 @@ export default function StatusPage() {
     }
   }, []);
 
+  // `load` awaits before it touches state, so the update lands in a microtask
+  // rather than synchronously — the cascading render this rule guards against
+  // cannot happen here. The analysis is conservative about any function that
+  // transitively setStates.
   useEffect(() => {
     const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load(controller.signal);
     const timer = window.setInterval(() => void load(controller.signal), POLL_MS);
     return () => {

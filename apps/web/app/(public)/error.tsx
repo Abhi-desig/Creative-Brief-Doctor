@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { BoundaryPage } from '@/components/boundary-page';
 import { buttonVariants } from '@/components/ui/button';
 
@@ -42,9 +43,9 @@ export default function PublicError({
           >
             Try again
           </button>
-          <a href="/" data-slot="button" className={buttonVariants({ variant: 'outline' })}>
+          <Link href="/" data-slot="button" className={buttonVariants({ variant: 'outline' })}>
             Diagnose a brief
-          </a>
+          </Link>
         </div>
       }
     />

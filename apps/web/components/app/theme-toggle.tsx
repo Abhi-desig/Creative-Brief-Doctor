@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { MoonIcon, SunIcon } from 'lucide-react';
+import { useHydrated } from '@/lib/use-hydrated';
 
 /**
  * Light/dark switch for the app frame.
@@ -18,8 +18,7 @@ import { MoonIcon, SunIcon } from 'lucide-react';
  */
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   const isDark = resolvedTheme === 'dark';
 

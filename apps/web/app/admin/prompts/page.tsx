@@ -5,7 +5,6 @@ import { adminFetch, AdminApiError } from '@/lib/admin-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
 import { SAMPLE_BRIEFS } from '@/lib/sample-briefs';
@@ -68,7 +67,12 @@ export default function PromptsPage() {
     }
   }, []);
 
+  // `load` awaits before it touches state, so the update lands in a microtask
+  // rather than synchronously — the cascading render this rule guards against
+  // cannot happen here. The analysis is conservative about any function that
+  // transitively setStates.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
