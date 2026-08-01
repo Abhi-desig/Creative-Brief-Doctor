@@ -13,17 +13,30 @@ import {
   type DimensionMap,
 } from './diagnosis.js';
 
+/**
+ * One dimension's entry.
+ *
+ * Annotated rather than inferred: `gaps: []` infers as `never[]`, which does not
+ * overlap with `string[]`, so the `as DimensionMap` casts below were unsound and
+ * TypeScript said so — nobody saw it because this file was excluded from every
+ * typecheck in the project until now.
+ */
+type Entry = DimensionMap[keyof DimensionMap];
+
+const entry = (score: number): Entry => ({
+  score,
+  rationale: 'r',
+  gaps: [],
+  evidence: ['q'],
+});
+
 /** A DimensionMap where every dimension carries the same score. */
 const flat = (score: number): DimensionMap =>
-  Object.fromEntries(
-    DIMENSIONS.map((d) => [d, { score, rationale: 'r', gaps: [], evidence: ['q'] }]),
-  ) as DimensionMap;
+  Object.fromEntries(DIMENSIONS.map((d) => [d, entry(score)])) as DimensionMap;
 
 /** A DimensionMap from five scores, in DIMENSIONS order. */
 const of = (scores: readonly number[]): DimensionMap =>
-  Object.fromEntries(
-    DIMENSIONS.map((d, i) => [d, { score: scores[i]!, rationale: 'r', gaps: [], evidence: ['q'] }]),
-  ) as DimensionMap;
+  Object.fromEntries(DIMENSIONS.map((d, i) => [d, entry(scores[i]!)])) as DimensionMap;
 
 describe('clampScore', () => {
   it('passes through in-range values', () => {

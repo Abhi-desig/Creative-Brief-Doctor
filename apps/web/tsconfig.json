@@ -12,6 +12,26 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
+
+    // ── Mirrored from tsconfig.base.json ────────────────────────────────────
+    // This file cannot simply `extend` the base: Next needs module/esnext,
+    // moduleResolution/bundler, jsx, a DOM lib and noEmit, which would mean
+    // overriding most of what the base sets. So the STRICTNESS is duplicated
+    // here on purpose, and only the strictness.
+    //
+    // Without these the web app was quietly the least strictly typed part of the
+    // monorepo — the same surface that had no tests at all. `noUncheckedIndexedAccess`
+    // is the one that matters most in practice: without it `array[0]` is typed
+    // `T` rather than `T | undefined`, which is exactly the class of bug that
+    // bites in list rendering. Verified the existing code passes all of these
+    // before turning them on, so this locks in current behaviour rather than
+    // changing it.
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+
     "incremental": true,
     "plugins": [
       {

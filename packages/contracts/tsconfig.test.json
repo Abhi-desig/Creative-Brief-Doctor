@@ -1,0 +1,24 @@
+{
+  // Typechecks the test files, which tsconfig.json deliberately excludes so that
+  // `tsc -b` does not emit them into dist.
+  //
+  // Without this they were checked by NOTHING. `tsc` skipped them via that
+  // exclude, and vitest transforms with esbuild, which strips types rather than
+  // verifying them — so a blatant error like `const n: number = "text"` in a test
+  // file passed both `pnpm typecheck` and `vitest run`. Verified before adding
+  // this, by doing exactly that.
+  //
+  // Mirrors the pattern apps/api already uses for its own test project.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false
+  },
+  // `extends` INHERITS `exclude`, so the parent's `src/**/*.test.ts` exclusion
+  // would still filter these out and this file would silently do nothing —
+  // which is exactly what happened on the first attempt.
+  "exclude": [],
+  "include": ["src/**/*.ts"]
+}
