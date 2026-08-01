@@ -64,6 +64,11 @@ export class DiagnosisService {
             promptVersion: { select: { label: true } },
           },
         },
+        // How many times this brief has been scored. A count rather than a
+        // history endpoint: the author-only row needs the number, not the rows,
+        // and `take: 1` above deliberately serves only the newest — a report
+        // shows one diagnosis, and which one must never be ambiguous.
+        _count: { select: { diagnoses: true } },
       },
     });
     if (!brief) throw new NotFoundException('Brief not found.');
@@ -81,6 +86,7 @@ export class DiagnosisService {
         requester: brief.requester,
         charCount: brief.charCount,
         createdAt: brief.createdAt,
+        timesScored: brief._count.diagnoses,
       },
       diagnosis: diagnosis
         ? {

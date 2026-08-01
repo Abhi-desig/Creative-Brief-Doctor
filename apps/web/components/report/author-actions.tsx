@@ -1,10 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { CheckIcon, CopyIcon } from 'lucide-react';
-import { useIsLocalBrief } from '@/lib/use-local-briefs';
+import { useIsLocalBrief, useLocalBriefs } from '@/lib/use-local-briefs';
+import { StreamAbortedError, streamDiagnosis } from '@/lib/sse-client';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { toast } from '@/components/ui/toast';
+import { ScoringProgress, type Phase } from '@/components/paste/scoring-progress';
 
 /**
  * Actions only the person who created this report can see.
@@ -20,13 +25,32 @@ import { Button } from '@/components/ui/button';
  * in a header: an action row above the fold that appears a moment after load
  * would shift the document under the reader.
  */
-export function AuthorActions({ publicId }: { publicId: string }) {
+export function AuthorActions({
+  publicId,
+  scored,
+  timesScored,
+}: {
+  publicId: string;
+  /** False when the brief exists but has no diagnosis — the dropped-stream case. */
+  scored: boolean;
+  timesScored: number;
+}) {
+  const router = useRouter();
   const isAuthor = useIsLocalBrief(publicId);
+  const { remember } = useLocalBriefs();
   const [copied, setCopied] = useState(false);
+  const [phase, setPhase] = useState<Phase | null>(null);
 
-  // Renders nothing at all for a stakeholder, and nothing during the first paint
-  // for the author. No skeleton: reserving space for a row most readers never see
-  // would put a hole in the document.
+  const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      abortRef.current?.abort();
+    };
+  }, []);
+
   if (!isAuthor) return null;
 
   async function copyLink() {
@@ -40,6 +64,49 @@ export function AuthorActions({ publicId }: { publicId: string }) {
     }
   }
 
+  /**
+   * Re-runs the diagnosis for this brief.
+   *
+   * This is the recovery path for a stream that dropped before its result frame.
+   * The brief row exists from the moment it was created, so the link already
+   * resolves — but without this the page said "not scored yet" with no way
+   * forward, and five briefs in the dev database reached exactly that state.
+   *
+   * It spends a real model call against the shared daily cap, so it is labelled
+   * as re-scoring rather than as a refresh, and it is never the primary action on
+   * a report that already has one.
+   */
+  async function rescore() {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setPhase('reading');
+
+    try {
+      await streamDiagnosis(
+        publicId,
+        (next) => {
+          if (mountedRef.current) setPhase(next);
+        },
+        controller.signal,
+      );
+      remember({ publicId, title: null, score: null, scoredAt: Date.now() });
+      // Server-rendered refresh rather than client state: the report is the
+      // canonical artefact and must be re-read, not patched.
+      router.refresh();
+      if (mountedRef.current) setPhase(null);
+    } catch (error) {
+      if (error instanceof StreamAbortedError || !mountedRef.current) return;
+      setPhase(null);
+      toast.add({
+        title: 'Re-scoring did not finish',
+        description: error instanceof Error ? error.message : 'Something went wrong.',
+      });
+    }
+  }
+
+  const busy = phase !== null;
+
   return (
     <section
       // Hidden in print: a PDF of this report is for the recipient, and controls
@@ -49,31 +116,49 @@ export function AuthorActions({ publicId }: { publicId: string }) {
     >
       <p className="text-viz-muted text-xs">
         You scored this brief on this device.
+        {timesScored > 1 ? ` It has been scored ${timesScored} times.` : ''}
       </p>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={copyLink} className="gap-2">
-          {copied ? (
-            <CheckIcon className="size-4" aria-hidden="true" />
-          ) : (
-            <CopyIcon className="size-4" aria-hidden="true" />
-          )}
-          {copied ? 'Link copied' : 'Copy link'}
-        </Button>
-        {/*
-          Re-scoring means pasting the brief again rather than a one-click rerun.
-          A button that silently spends one of the day's ten model calls is not
-          something to put next to "copy link" — and the paste page is where the
-          capacity chip lives, so the cost is visible before it is incurred.
-        */}
-        <Link
-          href="/"
-          data-slot="button"
-          className="text-viz-muted hover:text-foreground focus-visible:ring-ring self-center rounded-md px-2 py-1
-                     text-sm underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
-        >
-          Score another brief
-        </Link>
-      </div>
+
+      {busy ? (
+        <ScoringProgress phase={phase} />
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={copyLink} className="gap-2">
+            {copied ? (
+              <CheckIcon className="size-4" aria-hidden="true" />
+            ) : (
+              <CopyIcon className="size-4" aria-hidden="true" />
+            )}
+            {copied ? 'Link copied' : 'Copy link'}
+          </Button>
+
+          <Button
+            // Primary only when there is nothing here yet — that is the dropped
+            // stream, and re-scoring is the only useful thing to do.
+            variant={scored ? 'outline' : 'default'}
+            onClick={() => void rescore()}
+            className="gap-2"
+          >
+            {busy && <Spinner className="size-4" />}
+            {scored ? 'Score again' : 'Try scoring again'}
+          </Button>
+
+          <Link
+            href="/"
+            className="text-viz-muted hover:text-foreground focus-visible:ring-ring self-center rounded-md px-2 py-1
+                       text-sm underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Score another brief
+          </Link>
+        </div>
+      )}
+
+      {!busy ? (
+        <p className="text-viz-muted text-xs">
+          Re-scoring runs the brief through the model again and counts against the
+          day&rsquo;s shared limit.
+        </p>
+      ) : null}
     </section>
   );
 }

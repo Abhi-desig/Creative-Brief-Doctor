@@ -16,6 +16,7 @@ import { useLocalBriefs } from '@/lib/use-local-briefs';
 import { useCapacity } from '@/lib/use-capacity';
 import { SAMPLE_BRIEFS } from '@/lib/sample-briefs';
 import { Preflight } from './preflight';
+import { ScoringView } from './scoring-view';
 import { ScoringProgress, type Phase } from './scoring-progress';
 
 /**
@@ -163,6 +164,25 @@ export function PasteForm() {
         description: error instanceof Error ? error.message : 'Something went wrong.',
       });
     }
+  }
+
+  /**
+   * The form is REPLACED while scoring, not disabled beneath a spinner.
+   *
+   * Leaving a greyed-out form on screen for twenty-plus seconds gives the reader
+   * nothing to look at but the thing they can no longer use. Swapping in the
+   * report's own shape means the wait is spent seeing what is coming.
+   *
+   * The values are still in the form's state — this is a render swap, not a
+   * reset — so an error puts the user back in front of their own text.
+   */
+  if (phase !== null) {
+    return (
+      <ScoringView
+        phase={phase}
+        title={form.getValues('title')?.trim() || 'Untitled brief'}
+      />
+    );
   }
 
   return (

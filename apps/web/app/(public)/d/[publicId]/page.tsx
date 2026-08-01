@@ -70,11 +70,19 @@ export default async function ReportPage({ params }: PageProps) {
           <EmptyHeader>
             <EmptyTitle>This brief has not been scored yet</EmptyTitle>
             <EmptyDescription>
-              It was saved, but the diagnosis did not finish. Open it from the
-              paste page to run it again.
+              It was saved, but the diagnosis did not finish — usually a dropped
+              connection. The text is safe.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
+        {/*
+          The A7 recovery path. This is the exact state a truncated stream leaves
+          behind, and it previously had no way forward: the copy said "open it
+          from the paste page to run it again", which was not possible — the paste
+          page takes new text, not an existing id. The author now gets a working
+          re-score here; a stakeholder still sees only the message above.
+        */}
+        <AuthorActions publicId={publicId} scored={false} timesScored={0} />
       </Shell>
     );
   }
@@ -131,7 +139,11 @@ export default async function ReportPage({ params }: PageProps) {
         </Card>
 
         {/* After the questions, never in a header — see AuthorActions. */}
-        <AuthorActions publicId={publicId} />
+        <AuthorActions
+          publicId={publicId}
+          scored
+          timesScored={report.brief.timesScored}
+        />
 
         {/*
           Provenance: rubric version and date ONLY.

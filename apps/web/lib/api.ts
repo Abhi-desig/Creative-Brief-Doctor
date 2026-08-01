@@ -77,6 +77,8 @@ export interface ReportPayload {
     requester: string | null;
     charCount: number;
     createdAt: string;
+    /** Shown only in the author-only row. A count, not a history. */
+    timesScored: number;
   };
   diagnosis: {
     publicId: string;

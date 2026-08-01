@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { DIMENSION_ANCHORS } from '@cbd/contracts';
 
 /**
@@ -95,6 +96,20 @@ export function AnchorLadder({ defaultOpen }: { defaultOpen?: string | undefined
           </div>
         </details>
       ))}
+
+      {/*
+        At the foot of the ladder rather than only in the nav below. Someone who
+        has just expanded a dimension and read six anchors is exactly the person
+        who wants the whole standard — putting the link where that thought occurs
+        beats making them find it in a list further down.
+      */}
+      <Link
+        href="/rubric"
+        className="text-viz-muted hover:text-foreground focus-visible:ring-ring mt-1 rounded-lg px-2 py-1.5 text-xs
+                   focus-visible:ring-2 focus-visible:outline-none"
+      >
+        Read the full rubric →
+      </Link>
     </nav>
   );
 }
