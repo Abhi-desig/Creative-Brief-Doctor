@@ -1,0 +1,49 @@
+# Build context excludes. The API image builds from the REPO ROOT (see
+# apps/api/Dockerfile), so everything here is relative to the root.
+#
+# The critical entry is node_modules. The deps stage runs `pnpm install` to
+# populate /repo/node_modules for linux, and the build stage then does
+# `COPY . .` — without this file that copy drops the HOST's node_modules on top,
+# replacing linux binaries with darwin ones and breaking argon2, esbuild and
+# @swc/core at build time. It also drags ~1GB through the context on every
+# build.
+node_modules
+**/node_modules
+
+# Secrets. Nothing in the image needs these, and the build stage would otherwise
+# bake them into a layer.
+.env
+.env.*
+!.env.example
+
+# Build output — regenerated inside the image, and stale host copies would mask
+# a genuinely broken build.
+dist
+**/dist
+.next
+**/.next
+.turbo
+**/.turbo
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Not needed to build or run the API.
+.git
+.gitignore
+.claude
+.specify
+.vercel
+**/.vercel
+apps/web
+tools
+specs
+docker
+docker-compose.yml
+*.md
+.DS_Store
+**/.DS_Store
+
+# Belt and braces. `*.md` above is root-only under Docker's matcher, so the
+# rubric the seed reads is already safe — but say so explicitly, because the
+# seed fails in a confusing way if this file ever goes missing from the context.
+!apps/api/prisma/seed/rubric-v1.md
