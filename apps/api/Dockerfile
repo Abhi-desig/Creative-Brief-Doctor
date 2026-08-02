@@ -13,18 +13,28 @@ COPY apps/api/package.json apps/api/
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
+# Relies on the root .dockerignore to keep the host's node_modules out. Without
+# it this COPY replaces the linux modules installed above with darwin ones and
+# argon2 / esbuild / @swc/core all break.
 COPY . .
 RUN pnpm --filter @cbd/contracts --filter @cbd/ai build \
  && pnpm --filter @cbd/api exec prisma generate \
  && pnpm --filter @cbd/api build \
- && pnpm deploy --filter @cbd/api --prod /out
+ && pnpm deploy --filter @cbd/api --prod --legacy /out
 
 FROM node:22-alpine AS runtime
 RUN apk add --no-cache tini
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /out ./
-# Migrations and the seed need the schema and the rubric file at runtime.
+# The schema, the migrations and the rubric seed file.
+#
+# NOTE: this image cannot run `prisma migrate deploy` itself. `--prod` above
+# prunes the `prisma` CLI, `dotenv` and `tsx`, which are all devDependencies,
+# and prisma.config.ts additionally reads a repo-root .env that does not exist
+# here. Apply migrations from a checkout with DIRECT_URL pointed at the target
+# database (`pnpm --filter @cbd/api prisma:deploy`) rather than as a release
+# command, unless those three move into `dependencies` first.
 COPY --from=build /repo/apps/api/prisma ./prisma
 COPY --from=build /repo/apps/api/prisma.config.ts ./prisma.config.ts
 

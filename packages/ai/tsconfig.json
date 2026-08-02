@@ -4,7 +4,17 @@
     "rootDir": "src",
     "outDir": "dist",
     "tsBuildInfoFile": "dist/.tsbuildinfo",
-    "types": ["node"]
+    "types": ["node"],
+    // This package has no `"type": "module"`, so `module: NodeNext` emits
+    // CommonJS — which is what apps/api needs, because Nest compiles to CJS and
+    // `require()` of an ES module is a hard failure on runtimes that predate
+    // Node's require(esm) support. It crashed exactly that way on Vercel while
+    // passing locally, because local Node is new enough to paper over it.
+    //
+    // `verbatimModuleSyntax` has to come off to emit CJS at all: it forbids
+    // `import`/`export` syntax in any file that lowers to `require`. Same reason
+    // apps/api/tsconfig.json already turns it off.
+    "verbatimModuleSyntax": false
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.ts"],

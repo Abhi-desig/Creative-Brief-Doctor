@@ -66,8 +66,8 @@ importers:
         specifier: ^8.3.0
         version: 8.3.0
       nanoid:
-        specifier: ^5.1.6
-        version: 5.1.16
+        specifier: ^3.3.11
+        version: 3.3.16
       nestjs-zod:
         specifier: ^5.5.0
         version: 5.5.0(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/swagger@11.4.6(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2))(rxjs@7.8.2)(zod@4.4.3)

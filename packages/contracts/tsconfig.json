@@ -3,7 +3,11 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "tsBuildInfoFile": "dist/.tsbuildinfo"
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    // See the note in packages/ai/tsconfig.json. Dropping `"type": "module"`
+    // makes `module: NodeNext` emit CommonJS, which apps/api can `require()`;
+    // `verbatimModuleSyntax` must come off for that emit to be legal.
+    "verbatimModuleSyntax": false
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.ts"]

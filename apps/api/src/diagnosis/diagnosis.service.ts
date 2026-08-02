@@ -1,4 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+// Pinned to nanoid 3.x, which ships both CJS and ESM. 5.x is ESM-only, and Nest
+// builds this app to CommonJS (see the `moduleFormat = "cjs"` note in
+// prisma/schema.prisma), so `require('nanoid')` threw ERR_REQUIRE_ESM the moment
+// it ran on a Node runtime without require(esm) — which is what took the Vercel
+// deployment down. Same call signature and same URL-safe alphabet, so existing
+// publicId values keep their shape.
 import { nanoid } from 'nanoid';
 import { AIError, type Degradation } from '@cbd/ai';
 import { PrismaService } from '../prisma/prisma.service.js';
