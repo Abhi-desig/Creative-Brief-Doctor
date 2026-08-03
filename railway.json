@@ -4,6 +4,7 @@
     "buildCommand": "pnpm turbo run build --filter @cbd/api"
   },
   "deploy": {
+    "preDeployCommand": "pnpm --filter @cbd/api prisma:deploy && pnpm --filter @cbd/api seed",
     "startCommand": "pnpm --filter @cbd/api start",
     "healthcheckPath": "/health"
   }
