@@ -30,7 +30,17 @@
       ]
     },
     "lint": {},
+    // Same two dependencies as `build` and `typecheck`, for the same reason.
+    // Without them `pnpm dev` started the API against an unbuilt `@cbd/ai` and an
+    // ungenerated Prisma client — both git-ignored build artefacts — so `nest
+    // start --watch` failed to compile, never bound port 3000, and sat in its
+    // watch loop. The web app then reported the API as unreachable, which reads
+    // as "the API crashed" rather than "the API was never built".
     "dev": {
+      "dependsOn": [
+        "^build",
+        "prisma:generate"
+      ],
       "cache": false,
       "persistent": true
     },
