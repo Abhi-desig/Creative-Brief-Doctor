@@ -10,6 +10,19 @@ import { ApiMisconfiguredError, apiBase, assertNotSelf } from '@/lib/api';
  */
 export const dynamic = 'force-dynamic';
 
+/**
+ * A scoring run takes 20–30 seconds. Vercel functions default to a 10-second
+ * ceiling, which killed this handler mid-stream — the browser saw a truncated
+ * event stream and the client parser reported the run as failed, while the API
+ * happily finished scoring and wrote the diagnosis. The report existed; the
+ * submitting reader was told it did not.
+ *
+ * 60 is the Hobby plan's maximum. It is a ceiling, not a reservation: the
+ * function still ends when the stream does. The API's own `diagnose` timeout is
+ * what actually bounds a run.
+ */
+export const maxDuration = 60;
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ publicId: string }> },
