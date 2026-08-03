@@ -54,8 +54,33 @@ pnpm --filter @cbd/api seed:examples
 
 ## 3. API — container host
 
-Build from the **repo root** as context, with `apps/api/Dockerfile` as the
-Dockerfile. Health check: `GET /health`. Listens on `PORT` (default 3000).
+Two supported ways in, both building from the **repo root** as context:
+
+- **Railway** — [railway.json](railway.json) supplies the build and start
+  commands, the same way [apps/web/vercel.json](apps/web/vercel.json) does for
+  the web app. Railpack builds it; no Dockerfile involved.
+- **Render, Fly, or plain Docker** — [apps/api/Dockerfile](apps/api/Dockerfile)
+  as-is.
+
+**Whatever runs the build must reach the repo root.** `pnpm --filter @cbd/api
+build` on its own fails with ~80 TypeScript errors, because three of its inputs
+are git-ignored build artefacts that nothing has produced yet:
+
+| Missing artefact | How it surfaces |
+|---|---|
+| `packages/contracts/dist` | `TS2307: Cannot find module '@cbd/contracts'` |
+| `packages/ai/dist` | `TS2307: Cannot find module '@cbd/ai'` |
+| `apps/api/src/generated/prisma` | `TS2307` on `../generated/prisma/client.js`, then `PrismaService extends PrismaClient` resolves to nothing, so every `this.prisma.brief` is a `TS2339` and every inferred callback parameter a `TS7006` |
+
+Only the first three errors are real; the other ~77 are that cascade. They read
+like broken source and are not — nothing needs fixing in `src`.
+
+`pnpm turbo run build --filter @cbd/api` produces all three in dependency order,
+because [turbo.json](turbo.json) already encodes the graph (`^build` for the two
+packages, `prisma:generate` for the client). The Dockerfile spells the same three
+steps out longhand.
+
+Health check: `GET /health`. Listens on `PORT` (default 3000).
 
 | Variable | Required | Notes |
 |---|---|---|

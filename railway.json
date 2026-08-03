@@ -1,0 +1,10 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "pnpm turbo run build --filter @cbd/api"
+  },
+  "deploy": {
+    "startCommand": "pnpm --filter @cbd/api start",
+    "healthcheckPath": "/health"
+  }
+}
