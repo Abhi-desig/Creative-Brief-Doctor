@@ -32,33 +32,58 @@ Pointing `DIRECT_URL` at the pooled URL is the classic first-deploy failure.
 
 ## 2. Migrations
 
-Run these **before** the API first boots, from a checkout — not from the image.
-The runtime image cannot self-migrate: `pnpm deploy --prod` prunes the `prisma`
-CLI, `dotenv` and `tsx` (all devDependencies), and `prisma.config.ts` reads a
-repo-root `.env` that does not exist in the container.
-
-```bash
-DIRECT_URL='<unpooled-url>' pnpm --filter @cbd/api prisma:deploy
-```
+The schema must exist **before** the API first boots. An API on an unmigrated
+database boots fine and then fails its health check forever: the database
+indicator passes (`SELECT 1` needs no tables), and `promptIntegrity` reports
+down with `The table public.PromptVersion does not exist`. That is a 503 on
+`/health`, which reads as "the API is broken" rather than "nobody ran the
+migrations".
 
 Three migrations must apply. The second one,
 `20260731000001_database_level_constraints`, carries three constraints that are
 not expressible in Prisma schema language and **must never be squashed away**.
 
-Optionally seed the rubric and gallery examples:
+**On Railway, this is automatic.** `deploy.preDeployCommand` in
+[railway.json](railway.json) runs the migration and the rubric seed on every
+deploy, against the platform's own `DATABASE_URL` — so the database never needs
+public networking and no connection string ever leaves Railway. Both commands
+are safe to repeat: `migrate deploy` applies only what is missing, and the seed
+is idempotent by construction (see the header comment in
+[prisma/seed/seed.ts](apps/api/prisma/seed/seed.ts)).
+
+This works because railpack keeps devDependencies in the runtime image, so the
+`prisma` CLI and `tsx` are both present. **The Dockerfile path cannot do this**:
+`pnpm deploy --prod` prunes `prisma`, `dotenv` and `tsx`, and `prisma.config.ts`
+reads a repo-root `.env` that does not exist in that container. On Render, Fly
+or plain Docker, run it from a checkout instead:
 
 ```bash
-pnpm --filter @cbd/api seed
-pnpm --filter @cbd/api seed:examples
+DIRECT_URL='<unpooled-url>' pnpm --filter @cbd/api prisma:deploy
+DIRECT_URL='<unpooled-url>' pnpm --filter @cbd/api seed
+```
+
+Note that `<unpooled-url>` must be reachable from wherever you run this. A
+platform-internal hostname (`*.railway.internal`, and the equivalents elsewhere)
+resolves only inside that network — reaching it from a laptop means exposing the
+database publicly first, which is the main reason the Railway path above does it
+in-network instead.
+
+The gallery examples are genuinely optional and are not part of the pre-deploy
+command:
+
+```bash
+DIRECT_URL='<unpooled-url>' pnpm --filter @cbd/api seed:examples
 ```
 
 ## 3. API — container host
 
 Two supported ways in, both building from the **repo root** as context:
 
-- **Railway** — [railway.json](railway.json) supplies the build and start
-  commands, the same way [apps/web/vercel.json](apps/web/vercel.json) does for
-  the web app. Railpack builds it; no Dockerfile involved.
+- **Railway** — [railway.json](railway.json) supplies the build, pre-deploy and
+  start commands, the same way [apps/web/vercel.json](apps/web/vercel.json) does
+  for the web app. Railpack builds it; no Dockerfile involved. Config-as-code
+  wins over anything set in the dashboard, so the service needs no build or
+  start command configured by hand.
 - **Render, Fly, or plain Docker** — [apps/api/Dockerfile](apps/api/Dockerfile)
   as-is.
 
