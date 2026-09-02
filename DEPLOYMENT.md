@@ -84,6 +84,16 @@ Two supported ways in, both building from the **repo root** as context:
   for the web app. Railpack builds it; no Dockerfile involved. Config-as-code
   wins over anything set in the dashboard, so the service needs no build or
   start command configured by hand.
+
+  **If the web app also runs on Railway, from this same repo, the two services
+  must not share one config file.** Railway reads `railway.json` from a
+  service's root directory, and both services build from the repo root — so a
+  single shared file would hand the web service the API's build command, start
+  command and `/health` check, and its deploy would come up running the API. The
+  split: @cbd/api uses [railway.json](railway.json) at the default path, and
+  @cbd/web is pointed at [railway.web.json](railway.web.json) via **Settings →
+  Config-as-code → Railway Config File**. Only that second one is a manual
+  dashboard step, and skipping it is the failure above.
 - **Render, Fly, or plain Docker** — [apps/api/Dockerfile](apps/api/Dockerfile)
   as-is.
 
